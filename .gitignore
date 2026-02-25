@@ -1,0 +1,28 @@
+# Swift/Xcode
+.build/
+.swiftpm/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.moved-aside
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Dependencies
+Packages/
+Package.resolved
+
+# IDE
+*.xcuserstate
+xcuserdata/
+*.playground/
+
+# Build artifacts
+build/

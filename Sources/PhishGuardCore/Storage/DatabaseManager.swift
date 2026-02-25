@@ -1,0 +1,78 @@
+import Foundation
+import SQLite
+
+/// Manages the shared SQLite database in the App Group container.
+public final class DatabaseManager: @unchecked Sendable {
+    let connection: Connection
+
+    // MARK: - Table Definitions
+
+    static let verdicts = Table("verdicts")
+    static let verdictMessageId = SQLite.Expression<String>("message_id")
+    static let verdictScore = SQLite.Expression<Int>("score")
+    static let verdictReasons = SQLite.Expression<String>("reasons")  // JSON
+    static let verdictTimestamp = SQLite.Expression<Double>("timestamp")
+    static let verdictActionTaken = SQLite.Expression<String?>("action_taken")
+
+    static let blacklist = Table("blacklist")
+    static let blacklistDomain = SQLite.Expression<String>("domain")
+    static let blacklistSource = SQLite.Expression<String>("source")
+    static let blacklistLastUpdated = SQLite.Expression<Double>("last_updated")
+
+    static let allowlist = Table("allowlist")
+    static let allowlistDomain = SQLite.Expression<String>("domain")
+    static let allowlistAddedByUser = SQLite.Expression<Bool>("added_by_user")
+    static let allowlistTimestamp = SQLite.Expression<Double>("timestamp")
+
+    public init(databasePath: String? = nil) throws {
+        let path = databasePath ?? Self.defaultDatabasePath()
+
+        // Ensure directory exists
+        let dir = (path as NSString).deletingLastPathComponent
+        try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+
+        connection = try Connection(path)
+        connection.busyTimeout = 5
+        try createTables()
+    }
+
+    /// Initializes with an in-memory database, useful for testing.
+    public init(inMemory: Bool) throws {
+        connection = try Connection(.inMemory)
+        connection.busyTimeout = 5
+        try createTables()
+    }
+
+    /// Returns the default database path in the App Group container.
+    public static func defaultDatabasePath() -> String {
+        // In production, use the App Group container:
+        // FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.phishguard")!
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let phishGuardDir = appSupport.appendingPathComponent("PhishGuard")
+        return phishGuardDir.appendingPathComponent("verdicts.sqlite").path
+    }
+
+    private func createTables() throws {
+        try connection.run(Self.verdicts.create(ifNotExists: true) { t in
+            t.column(Self.verdictMessageId, primaryKey: true)
+            t.column(Self.verdictScore)
+            t.column(Self.verdictReasons)
+            t.column(Self.verdictTimestamp)
+            t.column(Self.verdictActionTaken)
+        })
+
+        try connection.run(Self.blacklist.create(ifNotExists: true) { t in
+            t.column(Self.blacklistDomain, primaryKey: true)
+            t.column(Self.blacklistSource)
+            t.column(Self.blacklistLastUpdated)
+        })
+
+        try connection.run(Self.allowlist.create(ifNotExists: true) { t in
+            t.column(Self.allowlistDomain, primaryKey: true)
+            t.column(Self.allowlistAddedByUser)
+            t.column(Self.allowlistTimestamp)
+        })
+
+        try connection.run(Self.verdicts.createIndex(Self.verdictTimestamp, ifNotExists: true))
+    }
+}
