@@ -40,7 +40,7 @@ public final class PhishingAnalyzer: @unchecked Sendable {
                     messageId: email.messageId,
                     score: 0,
                     reasons: [],
-                    actionTaken: .none
+                    actionTaken: Optional<ActionType>.none
                 )
             }
         }

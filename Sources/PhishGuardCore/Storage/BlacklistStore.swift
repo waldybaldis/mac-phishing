@@ -61,9 +61,11 @@ public final class BlacklistStore: @unchecked Sendable {
     public func lastUpdated(source: String) throws -> Date? {
         let query = DatabaseManager.blacklist
             .filter(DatabaseManager.blacklistSource == source)
-            .select(DatabaseManager.blacklistLastUpdated.max)
+            .order(DatabaseManager.blacklistLastUpdated.desc)
+            .limit(1)
 
-        guard let maxTimestamp = try db.connection.scalar(query) else { return nil }
-        return Date(timeIntervalSince1970: maxTimestamp)
+        guard let row = try db.connection.pluck(query) else { return nil }
+        let timestamp = row[DatabaseManager.blacklistLastUpdated]
+        return Date(timeIntervalSince1970: timestamp)
     }
 }
