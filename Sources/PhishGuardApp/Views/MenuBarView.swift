@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The main popover view shown from the menu bar icon.
 struct MenuBarView: View {
+    @StateObject private var accountManager = AccountManager()
     @State private var selectedTab = 0
 
     var body: some View {
@@ -13,7 +14,7 @@ struct MenuBarView: View {
                 Text("PhishGuard")
                     .font(.headline)
                 Spacer()
-                StatusIndicatorView(isMonitoring: true)
+                StatusIndicatorView(isMonitoring: accountManager.isAnyMonitoring)
             }
             .padding(.horizontal)
             .padding(.vertical, 10)
@@ -33,13 +34,13 @@ struct MenuBarView: View {
             // Content
             switch selectedTab {
             case 0:
-                AlertsListView()
+                AlertsListView(verdictStore: accountManager.verdictStore)
             case 1:
-                AccountSetupView()
+                AccountSetupView(accountManager: accountManager)
             case 2:
-                SettingsView()
+                SettingsView(accountManager: accountManager)
             default:
-                AlertsListView()
+                AlertsListView(verdictStore: accountManager.verdictStore)
             }
 
             Divider()

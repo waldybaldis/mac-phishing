@@ -1,5 +1,11 @@
 import Foundation
 
+/// How an account authenticates with its IMAP server.
+public enum AuthMethod: String, Codable, Sendable {
+    case password
+    case oauth2
+}
+
 /// Configuration for an IMAP mail account.
 public struct AccountConfig: Sendable, Codable, Identifiable {
     public let id: UUID
@@ -8,6 +14,7 @@ public struct AccountConfig: Sendable, Codable, Identifiable {
     public var imapPort: Int
     public var username: String
     public var useTLS: Bool
+    public var authMethod: AuthMethod
 
     public init(
         id: UUID = UUID(),
@@ -15,7 +22,8 @@ public struct AccountConfig: Sendable, Codable, Identifiable {
         imapServer: String,
         imapPort: Int = 993,
         username: String,
-        useTLS: Bool = true
+        useTLS: Bool = true,
+        authMethod: AuthMethod = .password
     ) {
         self.id = id
         self.displayName = displayName
@@ -23,6 +31,7 @@ public struct AccountConfig: Sendable, Codable, Identifiable {
         self.imapPort = imapPort
         self.username = username
         self.useTLS = useTLS
+        self.authMethod = authMethod
     }
 }
 
@@ -43,4 +52,12 @@ public enum MailProvider: String, CaseIterable, Sendable {
     }
 
     public var defaultPort: Int { 993 }
+
+    /// The authentication method appropriate for this provider.
+    public var authMethod: AuthMethod {
+        switch self {
+        case .gmail, .outlook: return .oauth2
+        case .icloud, .custom: return .password
+        }
+    }
 }

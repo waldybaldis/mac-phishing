@@ -1,27 +1,41 @@
 import SwiftUI
+import PhishGuardCore
 
-/// Displays recent phishing alerts.
+/// Displays recent phishing alerts from the verdict database.
 struct AlertsListView: View {
-    @State private var alerts: [AlertItem] = AlertItem.sampleAlerts
+    let verdictStore: VerdictStore
+    @State private var alerts: [AlertItem] = []
 
     var body: some View {
-        if alerts.isEmpty {
-            VStack(spacing: 12) {
-                Image(systemName: "checkmark.shield")
-                    .font(.largeTitle)
-                    .foregroundStyle(.green)
-                Text("No alerts")
-                    .font(.headline)
-                Text("Your inbox is clean")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+        Group {
+            if alerts.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "checkmark.shield")
+                        .font(.largeTitle)
+                        .foregroundStyle(.green)
+                    Text("No alerts")
+                        .font(.headline)
+                    Text("Your inbox is clean")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List(alerts) { alert in
+                    AlertRow(alert: alert)
+                }
+                .listStyle(.plain)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            List(alerts) { alert in
-                AlertRow(alert: alert)
-            }
-            .listStyle(.plain)
+        }
+        .onAppear { refresh() }
+    }
+
+    private func refresh() {
+        do {
+            let verdicts = try verdictStore.recentVerdicts(limit: 50, minimumScore: 3)
+            alerts = verdicts.map { AlertItem(verdict: $0) }
+        } catch {
+            alerts = []
         }
     }
 }
@@ -77,7 +91,7 @@ struct AlertRow: View {
 
 /// Model for an alert item displayed in the list.
 struct AlertItem: Identifiable {
-    let id = UUID()
+    let id: String
     let messageId: String
     let senderDomain: String
     let subject: String
@@ -93,31 +107,22 @@ struct AlertItem: Identifiable {
         }
     }
 
-    /// Sample data for development preview.
-    static let sampleAlerts: [AlertItem] = [
-        AlertItem(
-            messageId: "msg-001",
-            senderDomain: "fedrex.com",
-            subject: "Your package is waiting for delivery",
-            score: 9,
-            topReason: "Domain fedrex.com found in phishing blacklist",
-            timestamp: Date().addingTimeInterval(-300)
-        ),
-        AlertItem(
-            messageId: "msg-002",
-            senderDomain: "secure-banking.xyz",
-            subject: "Urgent: Verify your account now",
-            score: 6,
-            topReason: "Suspicious TLD .xyz found in sender domain",
-            timestamp: Date().addingTimeInterval(-3600)
-        ),
-        AlertItem(
-            messageId: "msg-003",
-            senderDomain: "notifications.amaz0n.com",
-            subject: "Order confirmation #38291",
-            score: 4,
-            topReason: "SPF softfail — sender authentication failed",
-            timestamp: Date().addingTimeInterval(-7200)
-        ),
-    ]
+    init(verdict: Verdict) {
+        self.id = verdict.messageId
+        self.messageId = verdict.messageId
+        self.senderDomain = Self.extractDomain(from: verdict.messageId)
+        self.subject = verdict.messageId // messageId is what we have; subject isn't stored in Verdict
+        self.score = verdict.score
+        self.topReason = verdict.reasons.first?.reason ?? "Suspicious content detected"
+        self.timestamp = verdict.timestamp
+    }
+
+    private static func extractDomain(from messageId: String) -> String {
+        if let atIndex = messageId.firstIndex(of: "@") {
+            let afterAt = messageId[messageId.index(after: atIndex)...]
+            let domain = afterAt.trimmingCharacters(in: CharacterSet(charactersIn: ">"))
+            return domain
+        }
+        return messageId
+    }
 }

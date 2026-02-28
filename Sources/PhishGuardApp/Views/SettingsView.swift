@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Settings view for adjusting PhishGuard behavior.
 struct SettingsView: View {
+    var accountManager: AccountManager?
     @State private var sensitivityThreshold: Double = 3.0
     @State private var movePhishingToJunk = true
     @State private var showNotifications = true
@@ -100,6 +101,25 @@ struct SettingsView: View {
                         Spacer()
                         Button("Refresh Now") {
                             // Trigger blacklist update
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+
+                if accountManager != nil {
+                    Divider()
+
+                    // Test detection
+                    Group {
+                        Text("Test Detection")
+                            .font(.headline)
+
+                        Text("Inject a fake phishing email to verify the detection pipeline works end-to-end.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Button("Send Test Phishing Alert") {
+                            accountManager?.injectTestPhishingEmail()
                         }
                         .buttonStyle(.bordered)
                     }

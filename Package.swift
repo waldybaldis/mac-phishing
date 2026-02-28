@@ -15,6 +15,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.7.0"),
         .package(url: "https://github.com/stephencelis/SQLite.swift.git", from: "0.15.0"),
+        .package(url: "https://github.com/Cocoanetics/SwiftMail.git", branch: "main"),
     ],
     targets: [
         .target(
@@ -22,6 +23,7 @@ let package = Package(
             dependencies: [
                 "SwiftSoup",
                 .product(name: "SQLite", package: "SQLite.swift"),
+                "SwiftMail",
             ],
             path: "Sources/PhishGuardCore"
         ),
