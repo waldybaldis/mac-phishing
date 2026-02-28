@@ -1,0 +1,97 @@
+name: PhishGuard
+
+options:
+  bundleIdPrefix: com.phishguard
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: AW7G7NR2Z4
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    DEAD_CODE_STRIPPING: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+packages:
+  SwiftSoup:
+    url: https://github.com/scinfu/SwiftSoup.git
+    from: "2.7.0"
+  SQLiteSwift:
+    url: https://github.com/stephencelis/SQLite.swift.git
+    from: "0.15.0"
+  SwiftMail:
+    url: https://github.com/Cocoanetics/SwiftMail.git
+    branch: main
+
+schemes:
+  PhishGuardApp:
+    build:
+      targets:
+        PhishGuardApp: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - PhishGuardCoreTests
+    profile:
+      config: Release
+
+targets:
+  PhishGuardCore:
+    type: framework
+    platform: macOS
+    sources:
+      - Sources/PhishGuardCore
+    dependencies:
+      - package: SwiftSoup
+      - package: SQLiteSwift
+        product: SQLite
+      - package: SwiftMail
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.phishguard.core
+        INFOPLIST_FILE: Sources/PhishGuardCore/Info.plist
+
+  PhishGuardApp:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/PhishGuardApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.phishguard.app
+        CODE_SIGN_ENTITLEMENTS: Sources/PhishGuardApp/PhishGuard.entitlements
+    dependencies:
+      - target: PhishGuardCore
+      - target: PhishGuardMailExtension
+
+  PhishGuardMailExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Sources/PhishGuardMailExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.phishguard.app.mail-extension
+        CODE_SIGN_ENTITLEMENTS: Sources/PhishGuardMailExtension/PhishGuardMailExtension.entitlements
+        INFOPLIST_FILE: Sources/PhishGuardMailExtension/Info.plist
+    dependencies:
+      - target: PhishGuardCore
+      - package: SQLiteSwift
+        product: SQLite
+      - sdk: MailKit.framework
+        embed: false
+
+  PhishGuardCoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/PhishGuardCoreTests
+    dependencies:
+      - target: PhishGuardCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.phishguard.core-tests

@@ -45,8 +45,12 @@ public final class DatabaseManager: @unchecked Sendable {
 
     /// Returns the default database path in the App Group container.
     public static func defaultDatabasePath() -> String {
-        // In production, use the App Group container:
-        // FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.phishguard")!
+        if let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.com.phishguard"
+        ) {
+            return containerURL.appendingPathComponent("verdicts.sqlite").path
+        }
+        // Fallback for unsigned dev builds
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let phishGuardDir = appSupport.appendingPathComponent("PhishGuard")
         return phishGuardDir.appendingPathComponent("verdicts.sqlite").path

@@ -1,16 +1,17 @@
 import Foundation
 #if canImport(MailKit)
 import MailKit
+import SQLite
 
 /// Mail Extension handler that applies visual labels to emails based on PhishGuard verdicts.
 ///
 /// This is the thin client that reads from the shared SQLite database.
 /// All heavy analysis is done by the menu bar app — the extension only reads verdicts
 /// and falls back to a lightweight Authentication-Results check if no verdict exists yet.
-final class MessageActionHandler: MEMessageActionHandler {
+final class MessageActionHandler: NSObject, MEMessageActionHandler {
 
     /// Decides what action to take for a message.
-    override func decideAction(for message: MEMessage, completionHandler: @escaping (MEMessageActionDecision?) -> Void) {
+    func decideAction(for message: MEMessage, completionHandler: @escaping @Sendable (MEMessageActionDecision?) -> Void) {
         guard let messageId = extractMessageId(from: message) else {
             completionHandler(nil)
             return
@@ -37,24 +38,20 @@ final class MessageActionHandler: MEMessageActionHandler {
     // MARK: - Verdict Lookup
 
     private func lookupVerdict(messageId: String) -> StoredVerdict? {
-        // Open shared SQLite from App Group container
-        // In production:
-        // guard let containerURL = FileManager.default.containerURL(
-        //     forSecurityApplicationGroupIdentifier: "group.com.phishguard"
-        // ) else { return nil }
-        //
-        // let dbPath = containerURL.appendingPathComponent("verdicts.sqlite").path
-        // guard let db = try? Connection(dbPath) else { return nil }
-        //
-        // let verdicts = Table("verdicts")
-        // let msgId = Expression<String>("message_id")
-        // let score = Expression<Int>("score")
-        // let query = verdicts.filter(msgId == messageId)
-        //
-        // guard let row = try? db.pluck(query) else { return nil }
-        // return StoredVerdict(messageId: messageId, score: row[score])
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.com.phishguard"
+        ) else { return nil }
 
-        return nil
+        let dbPath = containerURL.appendingPathComponent("verdicts.sqlite").path
+        guard let db = try? Connection(dbPath) else { return nil }
+
+        let verdicts = Table("verdicts")
+        let msgId = SQLite.Expression<String>("message_id")
+        let score = SQLite.Expression<Int>("score")
+        let query = verdicts.filter(msgId == messageId)
+
+        guard let row = try? db.pluck(query) else { return nil }
+        return StoredVerdict(messageId: messageId, score: row[score])
     }
 
     // MARK: - Action Mapping
@@ -63,10 +60,10 @@ final class MessageActionHandler: MEMessageActionHandler {
         switch verdict.score {
         case 6...:
             // High threat — move to junk
-            return MEMessageActionDecision(action: .moveToJunk)
+            return .action(.moveToJunk)
         case 3...5:
             // Suspicious — flag with orange color
-            return MEMessageActionDecision(action: .setFlag(.orange))
+            return .action(.flag(.orange))
         default:
             return nil
         }
@@ -89,10 +86,10 @@ final class MessageActionHandler: MEMessageActionHandler {
 
         if failures.count >= 2 {
             // Multiple auth failures — flag red
-            return MEMessageActionDecision(action: .setFlag(.red))
+            return .action(.flag(.red))
         } else if failures.count == 1 {
             // Single auth failure — flag orange
-            return MEMessageActionDecision(action: .setFlag(.orange))
+            return .action(.flag(.orange))
         }
 
         return nil
@@ -115,8 +112,8 @@ struct StoredVerdict {
 // MARK: - Extension Entry Point
 
 /// The principal class for the Mail Extension bundle.
-final class PhishGuardMailExtension: MEExtension {
-    func handler(for session: MEExtensionSession) -> MEExtensionHandler {
+final class PhishGuardMailExtension: NSObject, MEExtension {
+    func handlerForMessageActions() -> MEMessageActionHandler {
         return MessageActionHandler()
     }
 }

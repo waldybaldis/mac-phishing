@@ -1,0 +1,1004 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		07E580BEBB75F04D6C0225E1 /* AllowlistStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E67A48886054C75E5526C57 /* AllowlistStore.swift */; };
+		0BD63526451B829030760634 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 84C5BB9AD6FAA879D1B1132F /* SQLite */; };
+		0CE1CD25D4A2068F0F13BBCB /* MailAccountDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673E876FD9B08BBE3D4A4CFB /* MailAccountDiscovery.swift */; };
+		0D27A3093340B8FF82A2B6A8 /* IMAPMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DCF7F15AB766ED0469A2C13 /* IMAPMonitor.swift */; };
+		1C0BCA38D1C7B410224DDAAD /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCAC9B26F801F53C20A6C6A /* AppDelegate.swift */; };
+		2962F7944D2639177EE7A7C6 /* PhishGuardCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9BB55CEA9ACFA9DADF7BDDDB /* PhishGuardCore.framework */; };
+		3EAA6C0C84F1C9B39BA4A69C /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EC9FAE611D6DAB723CB6068 /* KeychainHelper.swift */; };
+		3FBD7DE0188B10E387A3DFCD /* AuthHeaderCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77FB26D5EF04F4ABFAFBBF42 /* AuthHeaderCheckTests.swift */; };
+		47FD0D1447EC459004BB8B3A /* VerdictStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F77592879218CC41BE8EDB20 /* VerdictStore.swift */; };
+		48316C28212BC92AD053CB11 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1950191AF1C96D4B206BAA80 /* SettingsView.swift */; };
+		48FA5EC9186DFC079B70EEE5 /* PhishGuardCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9BB55CEA9ACFA9DADF7BDDDB /* PhishGuardCore.framework */; };
+		548AB508F8796930D0E1296F /* Verdict.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DEA1CD9B1FDD9837408CF28 /* Verdict.swift */; };
+		57A2AAFBE717081EA6C694E3 /* OAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBD031A1E0D338A53AF25673 /* OAuthManager.swift */; };
+		59FE8728121C66C2E2388135 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 02F1E276F1914BB7CB163D14 /* SQLite */; };
+		61AB65AEFB80F4EA62CA269B /* ParsedEmailTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761E0D0C89D06CE906B0E9A9 /* ParsedEmailTests.swift */; };
+		64A26C68EA98C322E8556DFB /* LinkMismatchCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7446D1FB0AEA1EE6916FDDF /* LinkMismatchCheckTests.swift */; };
+		671E47AE840EA257F8CCA36C /* PhishingAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08D56E1E055D9B91B12D5A3 /* PhishingAnalyzer.swift */; };
+		67952EBD2C418AB68D3E60E4 /* AuthHeaderCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEBE6FFCC665DF9D085C50E9 /* AuthHeaderCheck.swift */; };
+		6A53BD423C99BBE9F1F7F36D /* IPURLCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 536AE1C4CE8C5F5B80AA5CB6 /* IPURLCheck.swift */; };
+		6C5C232CF6632E837660E645 /* AlertsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DAD6AF04A262F21D505AC2F /* AlertsListView.swift */; };
+		6D8E6360F207E6AD3EBBFD43 /* SwiftMail in Frameworks */ = {isa = PBXBuildFile; productRef = A96D7A135001A7DDF294DEE9 /* SwiftMail */; };
+		791106863B5CFC6F86AFCB36 /* BlacklistCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EC29B4FFCFF240932E40153 /* BlacklistCheck.swift */; };
+		7D6223D9FCE35C8B0EFEF1FE /* BlacklistStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD6426AAF11A11EBEA1B6269 /* BlacklistStore.swift */; };
+		7F11EF5470C0CEE367026096 /* OAuthConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC84DE9377B907E324B73CE2 /* OAuthConfig.swift */; };
+		826DA5BD5EC54CDB858CFFE7 /* StorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57DF20C6C2A4E50A2E59622A /* StorageTests.swift */; };
+		826E302D3712F4413678AA94 /* ReturnPathCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193CA349DCC1639706F092B3 /* ReturnPathCheck.swift */; };
+		8C14AEA4CDBE3864794DD708 /* SuspiciousTLDCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45B97FD78F8195758C91921 /* SuspiciousTLDCheck.swift */; };
+		8E4AE1237DD430FFE3D6650F /* AccountSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD22B68875CB34B9F980B812 /* AccountSetupView.swift */; };
+		8F22E4EF8B7CFC9910DA0725 /* IPURLCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60DE7A310BC1018D974490B0 /* IPURLCheckTests.swift */; };
+		8FECF1D77BF65A93DDA983A7 /* AccountManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F65130C2ADA569AF3034A4B6 /* AccountManager.swift */; };
+		906C3DAAE4BAD28842326245 /* SuspiciousTLDCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8C8090B622F071C9A22736 /* SuspiciousTLDCheckTests.swift */; };
+		973E2111F6BA3E32218CA983 /* PhishingAnalyzerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52BA2A3AF4EB9489496E1A5C /* PhishingAnalyzerTests.swift */; };
+		974091F2891BB82354B96679 /* BlacklistUpdaterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6631AB915FE1472A7617D3EA /* BlacklistUpdaterTests.swift */; };
+		97BBEAE88AE0FF5AA233CA27 /* ParsedEmail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 788FE202A6CFF73080126853 /* ParsedEmail.swift */; };
+		9A8B414F7400EE1E330F458A /* LinkMismatchCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1E91D376C520E3681C4B330 /* LinkMismatchCheck.swift */; };
+		9C0CD753B279D5FF364F903E /* AccountConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB00817449F6EDCA232919E /* AccountConfig.swift */; };
+		A052D1DA147820E13F7FC061 /* PhishGuardCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9BB55CEA9ACFA9DADF7BDDDB /* PhishGuardCore.framework */; };
+		A1FAF1190FF88FF761B6324C /* PhishGuardCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9BB55CEA9ACFA9DADF7BDDDB /* PhishGuardCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		B4FCBD3D0B9252DFC1236BA9 /* PhishGuardMailExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D5327109A315E3372B73B821 /* PhishGuardMailExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B8DF415E8544FE2C631086FE /* ReturnPathCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2999AB1DB7E8886392DF1C /* ReturnPathCheckTests.swift */; };
+		B998128C7036F505440520D4 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = EB0DA4A853705FB92810DC92 /* SwiftSoup */; };
+		BF5586ED9F66B131B75CF90D /* PhishingCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12E09963C3B2706281053AF5 /* PhishingCheck.swift */; };
+		BF7C9B3664948BEFBEF6515E /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D007504B256CDBC56A799369 /* DatabaseManager.swift */; };
+		C61AF2A4F9C2B9FDC2A2C00F /* BlacklistCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F475677A58B37DF98F97755 /* BlacklistCheckTests.swift */; };
+		CB2CCE87F680294785E1305F /* MailKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 442AEC858D2494C23086A272 /* MailKit.framework */; };
+		CCDE9F2BF94DE5044215690F /* BlacklistUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D45E277D638BB811389DE9 /* BlacklistUpdater.swift */; };
+		DFB248D6A72951C1A1EBA6DB /* PhishGuardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DF3AAA5879A2D9946EE1DF4 /* PhishGuardApp.swift */; };
+		E14B5246403BBB4FA363B479 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6AB58CAAE20BE312CA79D44 /* MenuBarView.swift */; };
+		E47BA19541FF180F083A5ECF /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A16F72D51DA6F775EB7A102F /* NotificationManager.swift */; };
+		EAE029C43BFD19CE02C3E740 /* PhishGuardCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9BB55CEA9ACFA9DADF7BDDDB /* PhishGuardCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		F60CEB91E09EDFBD523E213D /* MessageActionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 882C8C99B4C7F1D62A83A885 /* MessageActionHandler.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		4AD9EF503E33F07A2B9C9A61 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 675704CED3E9A2B23523D988 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8BAE27F315213031F326AF8B;
+			remoteInfo = PhishGuardCore;
+		};
+		A638620A2BE6C342CB0A55C3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 675704CED3E9A2B23523D988 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8BAE27F315213031F326AF8B;
+			remoteInfo = PhishGuardCore;
+		};
+		CD764408A1FA33947FC96AD4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 675704CED3E9A2B23523D988 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 52C614D00250C6FD363AB8F6;
+			remoteInfo = PhishGuardMailExtension;
+		};
+		E4F82A094DE2A54B8D9896EC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 675704CED3E9A2B23523D988 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8BAE27F315213031F326AF8B;
+			remoteInfo = PhishGuardCore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		44222A5F5CFFFCEF7787A70B /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B4FCBD3D0B9252DFC1236BA9 /* PhishGuardMailExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DC1996DEEDADE9BF934703E7 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				EAE029C43BFD19CE02C3E740 /* PhishGuardCore.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E2C5AC2623263399D5E6D71D /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				A1FAF1190FF88FF761B6324C /* PhishGuardCore.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0A4CE6FBEACD352CE3B60B16 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		0DCF7F15AB766ED0469A2C13 /* IMAPMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMAPMonitor.swift; sourceTree = "<group>"; };
+		0F8C8090B622F071C9A22736 /* SuspiciousTLDCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspiciousTLDCheckTests.swift; sourceTree = "<group>"; };
+		12E09963C3B2706281053AF5 /* PhishingCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhishingCheck.swift; sourceTree = "<group>"; };
+		193CA349DCC1639706F092B3 /* ReturnPathCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReturnPathCheck.swift; sourceTree = "<group>"; };
+		1950191AF1C96D4B206BAA80 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		2DAD6AF04A262F21D505AC2F /* AlertsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsListView.swift; sourceTree = "<group>"; };
+		2F475677A58B37DF98F97755 /* BlacklistCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlacklistCheckTests.swift; sourceTree = "<group>"; };
+		329E6E9D477A66C99DFE4CAB /* PhishGuardMailExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhishGuardMailExtension.entitlements; sourceTree = "<group>"; };
+		442AEC858D2494C23086A272 /* MailKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MailKit.framework; path = System/Library/Frameworks/MailKit.framework; sourceTree = SDKROOT; };
+		4EC9FAE611D6DAB723CB6068 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		52BA2A3AF4EB9489496E1A5C /* PhishingAnalyzerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhishingAnalyzerTests.swift; sourceTree = "<group>"; };
+		536AE1C4CE8C5F5B80AA5CB6 /* IPURLCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPURLCheck.swift; sourceTree = "<group>"; };
+		57DF20C6C2A4E50A2E59622A /* StorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageTests.swift; sourceTree = "<group>"; };
+		5DF3AAA5879A2D9946EE1DF4 /* PhishGuardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhishGuardApp.swift; sourceTree = "<group>"; };
+		5EC29B4FFCFF240932E40153 /* BlacklistCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlacklistCheck.swift; sourceTree = "<group>"; };
+		60DE7A310BC1018D974490B0 /* IPURLCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPURLCheckTests.swift; sourceTree = "<group>"; };
+		6585168A0FC2CA26CCD2D1FF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		6631AB915FE1472A7617D3EA /* BlacklistUpdaterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlacklistUpdaterTests.swift; sourceTree = "<group>"; };
+		673E876FD9B08BBE3D4A4CFB /* MailAccountDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailAccountDiscovery.swift; sourceTree = "<group>"; };
+		68AE78A6F5DE3E2F0A6CCC04 /* PhishGuard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhishGuard.entitlements; sourceTree = "<group>"; };
+		68D45E277D638BB811389DE9 /* BlacklistUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlacklistUpdater.swift; sourceTree = "<group>"; };
+		6E67A48886054C75E5526C57 /* AllowlistStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllowlistStore.swift; sourceTree = "<group>"; };
+		761E0D0C89D06CE906B0E9A9 /* ParsedEmailTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParsedEmailTests.swift; sourceTree = "<group>"; };
+		77FB26D5EF04F4ABFAFBBF42 /* AuthHeaderCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHeaderCheckTests.swift; sourceTree = "<group>"; };
+		788FE202A6CFF73080126853 /* ParsedEmail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParsedEmail.swift; sourceTree = "<group>"; };
+		7FB00817449F6EDCA232919E /* AccountConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountConfig.swift; sourceTree = "<group>"; };
+		882C8C99B4C7F1D62A83A885 /* MessageActionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageActionHandler.swift; sourceTree = "<group>"; };
+		90EEE310390346DF11E3AFD3 /* PhishGuardCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PhishGuardCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9BB55CEA9ACFA9DADF7BDDDB /* PhishGuardCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PhishGuardCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9DEA1CD9B1FDD9837408CF28 /* Verdict.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Verdict.swift; sourceTree = "<group>"; };
+		A16F72D51DA6F775EB7A102F /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		AD6426AAF11A11EBEA1B6269 /* BlacklistStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlacklistStore.swift; sourceTree = "<group>"; };
+		B7446D1FB0AEA1EE6916FDDF /* LinkMismatchCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkMismatchCheckTests.swift; sourceTree = "<group>"; };
+		BC84DE9377B907E324B73CE2 /* OAuthConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthConfig.swift; sourceTree = "<group>"; };
+		C5DA8D5190BADCFDA4EF8F27 /* PhishGuardApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhishGuardApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CC2999AB1DB7E8886392DF1C /* ReturnPathCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReturnPathCheckTests.swift; sourceTree = "<group>"; };
+		D007504B256CDBC56A799369 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
+		D45B97FD78F8195758C91921 /* SuspiciousTLDCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspiciousTLDCheck.swift; sourceTree = "<group>"; };
+		D5327109A315E3372B73B821 /* PhishGuardMailExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PhishGuardMailExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		D6AB58CAAE20BE312CA79D44 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		DD22B68875CB34B9F980B812 /* AccountSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSetupView.swift; sourceTree = "<group>"; };
+		E08D56E1E055D9B91B12D5A3 /* PhishingAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhishingAnalyzer.swift; sourceTree = "<group>"; };
+		E1E91D376C520E3681C4B330 /* LinkMismatchCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkMismatchCheck.swift; sourceTree = "<group>"; };
+		F65130C2ADA569AF3034A4B6 /* AccountManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountManager.swift; sourceTree = "<group>"; };
+		F77592879218CC41BE8EDB20 /* VerdictStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerdictStore.swift; sourceTree = "<group>"; };
+		FBCAC9B26F801F53C20A6C6A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		FBD031A1E0D338A53AF25673 /* OAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthManager.swift; sourceTree = "<group>"; };
+		FD95F1230494598E60EECB33 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		FEBE6FFCC665DF9D085C50E9 /* AuthHeaderCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHeaderCheck.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		217F048BE3B131FB461A2BDF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2962F7944D2639177EE7A7C6 /* PhishGuardCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		257BAA7CC41BFE4C7C228AB5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				48FA5EC9186DFC079B70EEE5 /* PhishGuardCore.framework in Frameworks */,
+				59FE8728121C66C2E2388135 /* SQLite in Frameworks */,
+				CB2CCE87F680294785E1305F /* MailKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57C07EA90C5C17F4B798CED0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A052D1DA147820E13F7FC061 /* PhishGuardCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8F736200168AE28DB34D6BF2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B998128C7036F505440520D4 /* SwiftSoup in Frameworks */,
+				0BD63526451B829030760634 /* SQLite in Frameworks */,
+				6D8E6360F207E6AD3EBBFD43 /* SwiftMail in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		11DBEB36D8545FE9B3A2B7DE /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				C69B29BD0FC70EE108AC72B0 /* PhishGuardCoreTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		2E62954B97F6E619638C916D /* PhishGuardCore */ = {
+			isa = PBXGroup;
+			children = (
+				6585168A0FC2CA26CCD2D1FF /* Info.plist */,
+				C32B334245F6874A234CE8FE /* Analyzer */,
+				9F4C113EA4A3EB6A57ACB2E0 /* Blacklist */,
+				6197C4C7A7BE0A2935410422 /* IMAP */,
+				32F69D9969B1466E9AA208F9 /* Models */,
+				FF212727662C6AB6581D9F49 /* Notifications */,
+				3E602DB1568092B5362C6E94 /* Storage */,
+			);
+			path = PhishGuardCore;
+			sourceTree = "<group>";
+		};
+		32F69D9969B1466E9AA208F9 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				7FB00817449F6EDCA232919E /* AccountConfig.swift */,
+				788FE202A6CFF73080126853 /* ParsedEmail.swift */,
+				9DEA1CD9B1FDD9837408CF28 /* Verdict.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		3E602DB1568092B5362C6E94 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				6E67A48886054C75E5526C57 /* AllowlistStore.swift */,
+				AD6426AAF11A11EBEA1B6269 /* BlacklistStore.swift */,
+				D007504B256CDBC56A799369 /* DatabaseManager.swift */,
+				F77592879218CC41BE8EDB20 /* VerdictStore.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+		6197C4C7A7BE0A2935410422 /* IMAP */ = {
+			isa = PBXGroup;
+			children = (
+				0DCF7F15AB766ED0469A2C13 /* IMAPMonitor.swift */,
+			);
+			path = IMAP;
+			sourceTree = "<group>";
+		};
+		73B2DC15B639CA14AD75C79C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				442AEC858D2494C23086A272 /* MailKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		99BA828EEEA795F609295FC7 /* PhishGuardMailExtension */ = {
+			isa = PBXGroup;
+			children = (
+				FD95F1230494598E60EECB33 /* Info.plist */,
+				882C8C99B4C7F1D62A83A885 /* MessageActionHandler.swift */,
+				329E6E9D477A66C99DFE4CAB /* PhishGuardMailExtension.entitlements */,
+			);
+			path = PhishGuardMailExtension;
+			sourceTree = "<group>";
+		};
+		9F4C113EA4A3EB6A57ACB2E0 /* Blacklist */ = {
+			isa = PBXGroup;
+			children = (
+				68D45E277D638BB811389DE9 /* BlacklistUpdater.swift */,
+			);
+			path = Blacklist;
+			sourceTree = "<group>";
+		};
+		B310D31F4EFBA3F331BF37BF /* PhishGuardApp */ = {
+			isa = PBXGroup;
+			children = (
+				F65130C2ADA569AF3034A4B6 /* AccountManager.swift */,
+				FBCAC9B26F801F53C20A6C6A /* AppDelegate.swift */,
+				0A4CE6FBEACD352CE3B60B16 /* Info.plist */,
+				4EC9FAE611D6DAB723CB6068 /* KeychainHelper.swift */,
+				673E876FD9B08BBE3D4A4CFB /* MailAccountDiscovery.swift */,
+				BC84DE9377B907E324B73CE2 /* OAuthConfig.swift */,
+				FBD031A1E0D338A53AF25673 /* OAuthManager.swift */,
+				68AE78A6F5DE3E2F0A6CCC04 /* PhishGuard.entitlements */,
+				5DF3AAA5879A2D9946EE1DF4 /* PhishGuardApp.swift */,
+				F1BE1944728A2569E0E76BAC /* Views */,
+			);
+			path = PhishGuardApp;
+			sourceTree = "<group>";
+		};
+		C32B334245F6874A234CE8FE /* Analyzer */ = {
+			isa = PBXGroup;
+			children = (
+				FEBE6FFCC665DF9D085C50E9 /* AuthHeaderCheck.swift */,
+				5EC29B4FFCFF240932E40153 /* BlacklistCheck.swift */,
+				536AE1C4CE8C5F5B80AA5CB6 /* IPURLCheck.swift */,
+				E1E91D376C520E3681C4B330 /* LinkMismatchCheck.swift */,
+				E08D56E1E055D9B91B12D5A3 /* PhishingAnalyzer.swift */,
+				12E09963C3B2706281053AF5 /* PhishingCheck.swift */,
+				193CA349DCC1639706F092B3 /* ReturnPathCheck.swift */,
+				D45B97FD78F8195758C91921 /* SuspiciousTLDCheck.swift */,
+			);
+			path = Analyzer;
+			sourceTree = "<group>";
+		};
+		C69B29BD0FC70EE108AC72B0 /* PhishGuardCoreTests */ = {
+			isa = PBXGroup;
+			children = (
+				77FB26D5EF04F4ABFAFBBF42 /* AuthHeaderCheckTests.swift */,
+				2F475677A58B37DF98F97755 /* BlacklistCheckTests.swift */,
+				6631AB915FE1472A7617D3EA /* BlacklistUpdaterTests.swift */,
+				60DE7A310BC1018D974490B0 /* IPURLCheckTests.swift */,
+				B7446D1FB0AEA1EE6916FDDF /* LinkMismatchCheckTests.swift */,
+				761E0D0C89D06CE906B0E9A9 /* ParsedEmailTests.swift */,
+				52BA2A3AF4EB9489496E1A5C /* PhishingAnalyzerTests.swift */,
+				CC2999AB1DB7E8886392DF1C /* ReturnPathCheckTests.swift */,
+				57DF20C6C2A4E50A2E59622A /* StorageTests.swift */,
+				0F8C8090B622F071C9A22736 /* SuspiciousTLDCheckTests.swift */,
+			);
+			path = PhishGuardCoreTests;
+			sourceTree = "<group>";
+		};
+		DFB30E3E5A1390F0B48B1E9D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C5DA8D5190BADCFDA4EF8F27 /* PhishGuardApp.app */,
+				9BB55CEA9ACFA9DADF7BDDDB /* PhishGuardCore.framework */,
+				90EEE310390346DF11E3AFD3 /* PhishGuardCoreTests.xctest */,
+				D5327109A315E3372B73B821 /* PhishGuardMailExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E413040A557C672DF05E048B = {
+			isa = PBXGroup;
+			children = (
+				F63294DC9B9705D36164F781 /* Sources */,
+				11DBEB36D8545FE9B3A2B7DE /* Tests */,
+				73B2DC15B639CA14AD75C79C /* Frameworks */,
+				DFB30E3E5A1390F0B48B1E9D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F1BE1944728A2569E0E76BAC /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				DD22B68875CB34B9F980B812 /* AccountSetupView.swift */,
+				2DAD6AF04A262F21D505AC2F /* AlertsListView.swift */,
+				D6AB58CAAE20BE312CA79D44 /* MenuBarView.swift */,
+				1950191AF1C96D4B206BAA80 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		F63294DC9B9705D36164F781 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				B310D31F4EFBA3F331BF37BF /* PhishGuardApp */,
+				2E62954B97F6E619638C916D /* PhishGuardCore */,
+				99BA828EEEA795F609295FC7 /* PhishGuardMailExtension */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		FF212727662C6AB6581D9F49 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				A16F72D51DA6F775EB7A102F /* NotificationManager.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		52C614D00250C6FD363AB8F6 /* PhishGuardMailExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 269484C30BD6889CBEB27BB9 /* Build configuration list for PBXNativeTarget "PhishGuardMailExtension" */;
+			buildPhases = (
+				38B90F1BAAE5DC9A0E235C8A /* Sources */,
+				257BAA7CC41BFE4C7C228AB5 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9E7EE262485A2782FEEABA0A /* PBXTargetDependency */,
+			);
+			name = PhishGuardMailExtension;
+			packageProductDependencies = (
+				02F1E276F1914BB7CB163D14 /* SQLite */,
+			);
+			productName = PhishGuardMailExtension;
+			productReference = D5327109A315E3372B73B821 /* PhishGuardMailExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		62FB9CD22AF207FAF0FB7D0D /* PhishGuardApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4DBFD4A485D05B2D77E45DE3 /* Build configuration list for PBXNativeTarget "PhishGuardApp" */;
+			buildPhases = (
+				6ED0510721A5E815B7955EBE /* Sources */,
+				217F048BE3B131FB461A2BDF /* Frameworks */,
+				44222A5F5CFFFCEF7787A70B /* Embed Foundation Extensions */,
+				DC1996DEEDADE9BF934703E7 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BF5F4BB270F69A98C1B3FE20 /* PBXTargetDependency */,
+				5726F08197C28D37F1159965 /* PBXTargetDependency */,
+			);
+			name = PhishGuardApp;
+			packageProductDependencies = (
+			);
+			productName = PhishGuardApp;
+			productReference = C5DA8D5190BADCFDA4EF8F27 /* PhishGuardApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		65BCAC39B6A17CE31D6AD4FD /* PhishGuardCoreTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7046198B0E4A6AE65A17CD10 /* Build configuration list for PBXNativeTarget "PhishGuardCoreTests" */;
+			buildPhases = (
+				F8C88DABD549D053D7E1F2E5 /* Sources */,
+				57C07EA90C5C17F4B798CED0 /* Frameworks */,
+				E2C5AC2623263399D5E6D71D /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C732C42E6C0041CD13053751 /* PBXTargetDependency */,
+			);
+			name = PhishGuardCoreTests;
+			packageProductDependencies = (
+			);
+			productName = PhishGuardCoreTests;
+			productReference = 90EEE310390346DF11E3AFD3 /* PhishGuardCoreTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		8BAE27F315213031F326AF8B /* PhishGuardCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2081C643641FE7F2D5DF1C0D /* Build configuration list for PBXNativeTarget "PhishGuardCore" */;
+			buildPhases = (
+				7C5DC2EB6F6D30D1995FD830 /* Sources */,
+				8F736200168AE28DB34D6BF2 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PhishGuardCore;
+			packageProductDependencies = (
+				EB0DA4A853705FB92810DC92 /* SwiftSoup */,
+				84C5BB9AD6FAA879D1B1132F /* SQLite */,
+				A96D7A135001A7DDF294DEE9 /* SwiftMail */,
+			);
+			productName = PhishGuardCore;
+			productReference = 9BB55CEA9ACFA9DADF7BDDDB /* PhishGuardCore.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		675704CED3E9A2B23523D988 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					52C614D00250C6FD363AB8F6 = {
+						DevelopmentTeam = AW7G7NR2Z4;
+						ProvisioningStyle = Automatic;
+					};
+					62FB9CD22AF207FAF0FB7D0D = {
+						DevelopmentTeam = AW7G7NR2Z4;
+						ProvisioningStyle = Automatic;
+					};
+					65BCAC39B6A17CE31D6AD4FD = {
+						DevelopmentTeam = AW7G7NR2Z4;
+						ProvisioningStyle = Automatic;
+					};
+					8BAE27F315213031F326AF8B = {
+						DevelopmentTeam = AW7G7NR2Z4;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = DD6395489C2A1DFA4C072745 /* Build configuration list for PBXProject "PhishGuard" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = E413040A557C672DF05E048B;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C3DBDC8B34BBE678803E8B95 /* XCRemoteSwiftPackageReference "SQLite.swift" */,
+				A5886DD6721155471A76C76F /* XCRemoteSwiftPackageReference "SwiftMail" */,
+				506DC5CBBF74F7D0B48C4611 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				62FB9CD22AF207FAF0FB7D0D /* PhishGuardApp */,
+				8BAE27F315213031F326AF8B /* PhishGuardCore */,
+				65BCAC39B6A17CE31D6AD4FD /* PhishGuardCoreTests */,
+				52C614D00250C6FD363AB8F6 /* PhishGuardMailExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		38B90F1BAAE5DC9A0E235C8A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F60CEB91E09EDFBD523E213D /* MessageActionHandler.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6ED0510721A5E815B7955EBE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8FECF1D77BF65A93DDA983A7 /* AccountManager.swift in Sources */,
+				8E4AE1237DD430FFE3D6650F /* AccountSetupView.swift in Sources */,
+				6C5C232CF6632E837660E645 /* AlertsListView.swift in Sources */,
+				1C0BCA38D1C7B410224DDAAD /* AppDelegate.swift in Sources */,
+				3EAA6C0C84F1C9B39BA4A69C /* KeychainHelper.swift in Sources */,
+				0CE1CD25D4A2068F0F13BBCB /* MailAccountDiscovery.swift in Sources */,
+				E14B5246403BBB4FA363B479 /* MenuBarView.swift in Sources */,
+				7F11EF5470C0CEE367026096 /* OAuthConfig.swift in Sources */,
+				57A2AAFBE717081EA6C694E3 /* OAuthManager.swift in Sources */,
+				DFB248D6A72951C1A1EBA6DB /* PhishGuardApp.swift in Sources */,
+				48316C28212BC92AD053CB11 /* SettingsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7C5DC2EB6F6D30D1995FD830 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9C0CD753B279D5FF364F903E /* AccountConfig.swift in Sources */,
+				07E580BEBB75F04D6C0225E1 /* AllowlistStore.swift in Sources */,
+				67952EBD2C418AB68D3E60E4 /* AuthHeaderCheck.swift in Sources */,
+				791106863B5CFC6F86AFCB36 /* BlacklistCheck.swift in Sources */,
+				7D6223D9FCE35C8B0EFEF1FE /* BlacklistStore.swift in Sources */,
+				CCDE9F2BF94DE5044215690F /* BlacklistUpdater.swift in Sources */,
+				BF7C9B3664948BEFBEF6515E /* DatabaseManager.swift in Sources */,
+				0D27A3093340B8FF82A2B6A8 /* IMAPMonitor.swift in Sources */,
+				6A53BD423C99BBE9F1F7F36D /* IPURLCheck.swift in Sources */,
+				9A8B414F7400EE1E330F458A /* LinkMismatchCheck.swift in Sources */,
+				E47BA19541FF180F083A5ECF /* NotificationManager.swift in Sources */,
+				97BBEAE88AE0FF5AA233CA27 /* ParsedEmail.swift in Sources */,
+				671E47AE840EA257F8CCA36C /* PhishingAnalyzer.swift in Sources */,
+				BF5586ED9F66B131B75CF90D /* PhishingCheck.swift in Sources */,
+				826E302D3712F4413678AA94 /* ReturnPathCheck.swift in Sources */,
+				8C14AEA4CDBE3864794DD708 /* SuspiciousTLDCheck.swift in Sources */,
+				548AB508F8796930D0E1296F /* Verdict.swift in Sources */,
+				47FD0D1447EC459004BB8B3A /* VerdictStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F8C88DABD549D053D7E1F2E5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3FBD7DE0188B10E387A3DFCD /* AuthHeaderCheckTests.swift in Sources */,
+				C61AF2A4F9C2B9FDC2A2C00F /* BlacklistCheckTests.swift in Sources */,
+				974091F2891BB82354B96679 /* BlacklistUpdaterTests.swift in Sources */,
+				8F22E4EF8B7CFC9910DA0725 /* IPURLCheckTests.swift in Sources */,
+				64A26C68EA98C322E8556DFB /* LinkMismatchCheckTests.swift in Sources */,
+				61AB65AEFB80F4EA62CA269B /* ParsedEmailTests.swift in Sources */,
+				973E2111F6BA3E32218CA983 /* PhishingAnalyzerTests.swift in Sources */,
+				B8DF415E8544FE2C631086FE /* ReturnPathCheckTests.swift in Sources */,
+				826DA5BD5EC54CDB858CFFE7 /* StorageTests.swift in Sources */,
+				906C3DAAE4BAD28842326245 /* SuspiciousTLDCheckTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5726F08197C28D37F1159965 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 52C614D00250C6FD363AB8F6 /* PhishGuardMailExtension */;
+			targetProxy = CD764408A1FA33947FC96AD4 /* PBXContainerItemProxy */;
+		};
+		9E7EE262485A2782FEEABA0A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8BAE27F315213031F326AF8B /* PhishGuardCore */;
+			targetProxy = E4F82A094DE2A54B8D9896EC /* PBXContainerItemProxy */;
+		};
+		BF5F4BB270F69A98C1B3FE20 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8BAE27F315213031F326AF8B /* PhishGuardCore */;
+			targetProxy = A638620A2BE6C342CB0A55C3 /* PBXContainerItemProxy */;
+		};
+		C732C42E6C0041CD13053751 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8BAE27F315213031F326AF8B /* PhishGuardCore */;
+			targetProxy = 4AD9EF503E33F07A2B9C9A61 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		060CA62716D9DFF3ED6CDE00 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = AW7G7NR2Z4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		18ACE3885F4640842B8CFDFA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/PhishGuardApp/PhishGuard.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Sources/PhishGuardApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.phishguard.app;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		26BB970E915EEB98C07D032F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				INFOPLIST_FILE = Sources/PhishGuardCore/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.phishguard.core;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		644618FD020096C31505FED8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.phishguard.core-tests";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		712DAF6E25051275B7DB5D99 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/PhishGuardApp/PhishGuard.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Sources/PhishGuardApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.phishguard.app;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		76A7B67D8F91F55FEFD3DA3E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/PhishGuardMailExtension/PhishGuardMailExtension.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Sources/PhishGuardMailExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.phishguard.app.mail-extension";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		8DDA8CDEB6E5126444897757 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.phishguard.core-tests";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		AB0D228E60AD420D66CB4D7B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/PhishGuardMailExtension/PhishGuardMailExtension.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Sources/PhishGuardMailExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.phishguard.app.mail-extension";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		B48D83B02CFC3F2946C77FF1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				INFOPLIST_FILE = Sources/PhishGuardCore/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.phishguard.core;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+		E567E8ACEBD9CA2F7DA117FC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = AW7G7NR2Z4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2081C643641FE7F2D5DF1C0D /* Build configuration list for PBXNativeTarget "PhishGuardCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B48D83B02CFC3F2946C77FF1 /* Debug */,
+				26BB970E915EEB98C07D032F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		269484C30BD6889CBEB27BB9 /* Build configuration list for PBXNativeTarget "PhishGuardMailExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB0D228E60AD420D66CB4D7B /* Debug */,
+				76A7B67D8F91F55FEFD3DA3E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4DBFD4A485D05B2D77E45DE3 /* Build configuration list for PBXNativeTarget "PhishGuardApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				712DAF6E25051275B7DB5D99 /* Debug */,
+				18ACE3885F4640842B8CFDFA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7046198B0E4A6AE65A17CD10 /* Build configuration list for PBXNativeTarget "PhishGuardCoreTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8DDA8CDEB6E5126444897757 /* Debug */,
+				644618FD020096C31505FED8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DD6395489C2A1DFA4C072745 /* Build configuration list for PBXProject "PhishGuard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E567E8ACEBD9CA2F7DA117FC /* Debug */,
+				060CA62716D9DFF3ED6CDE00 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		506DC5CBBF74F7D0B48C4611 /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/scinfu/SwiftSoup.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.7.0;
+			};
+		};
+		A5886DD6721155471A76C76F /* XCRemoteSwiftPackageReference "SwiftMail" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Cocoanetics/SwiftMail.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+		C3DBDC8B34BBE678803E8B95 /* XCRemoteSwiftPackageReference "SQLite.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stephencelis/SQLite.swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.15.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		02F1E276F1914BB7CB163D14 /* SQLite */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C3DBDC8B34BBE678803E8B95 /* XCRemoteSwiftPackageReference "SQLite.swift" */;
+			productName = SQLite;
+		};
+		84C5BB9AD6FAA879D1B1132F /* SQLite */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C3DBDC8B34BBE678803E8B95 /* XCRemoteSwiftPackageReference "SQLite.swift" */;
+			productName = SQLite;
+		};
+		A96D7A135001A7DDF294DEE9 /* SwiftMail */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A5886DD6721155471A76C76F /* XCRemoteSwiftPackageReference "SwiftMail" */;
+			productName = SwiftMail;
+		};
+		EB0DA4A853705FB92810DC92 /* SwiftSoup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 506DC5CBBF74F7D0B48C4611 /* XCRemoteSwiftPackageReference "SwiftSoup" */;
+			productName = SwiftSoup;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 675704CED3E9A2B23523D988 /* Project object */;
+}
