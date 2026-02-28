@@ -105,92 +105,80 @@ struct AlertRow: View {
     @State private var isHovering = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Main content area
-            VStack(alignment: .leading, spacing: 6) {
-                // Row 1: Threat indicator + Sender name + Date
-                HStack(alignment: .center, spacing: 8) {
-                    threatBadge
-                    Text(verdict.senderName)
-                        .font(.system(.body, weight: .semibold))
-                        .lineLimit(1)
-                    Spacer()
-                    Text(formattedDate)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                // Row 2: Sender email
-                Text(verdict.senderEmail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            // Row 1: Threat indicator + Sender name + Date
+            HStack(alignment: .center, spacing: 6) {
+                Circle()
+                    .fill(threatColor)
+                    .frame(width: 8, height: 8)
+                Text(verdict.senderName)
+                    .font(.system(.callout, weight: .semibold))
                     .lineLimit(1)
-
-                // Row 3: Subject
-                Text(verdict.subject.isEmpty ? "(No Subject)" : verdict.subject)
-                    .font(.subheadline)
-                    .lineLimit(2)
-
-                // Row 4: Top reason
-                if let topReason = verdict.reasons.first {
-                    Label(topReason.reason, systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(reasonColor)
-                        .lineLimit(2)
-                }
-
-                // Row 5: Actions (shown on hover or when selected)
-                if isHovering || isSelected {
-                    HStack(spacing: 12) {
-                        Button {
-                            onMarkSafe()
-                        } label: {
-                            Label("Mark Safe", systemImage: "checkmark.circle")
-                                .font(.caption)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.green)
-
-                        Button {
-                            onDelete()
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                                .font(.caption)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.red)
-
-                        Spacer()
-
-                        scoreBadge
-                    }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
+                Spacer()
+                Text(formattedDate)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+
+            // Row 2: Email address
+            Text(verdict.senderEmail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .padding(.leading, 14)
+
+            // Row 3: Subject
+            Text(verdict.subject.isEmpty ? "(No Subject)" : verdict.subject)
+                .font(.caption)
+                .lineLimit(1)
+                .padding(.leading, 14)
+
+            // Row 4: Top reason
+            if let topReason = verdict.reasons.first {
+                Label(topReason.reason, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption2)
+                    .foregroundStyle(reasonColor)
+                    .lineLimit(2)
+                    .padding(.leading, 14)
+            }
+
+            // Row 5: Actions (shown on hover or when selected)
+            if isHovering || isSelected {
+                HStack(spacing: 10) {
+                    Button { onMarkSafe() } label: {
+                        Label("Safe", systemImage: "checkmark.circle")
+                            .font(.caption2)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.green)
+
+                    Button { onDelete() } label: {
+                        Label("Delete", systemImage: "trash")
+                            .font(.caption2)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.red)
+
+                    Spacer()
+
+                    Text("\(verdict.score)")
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(threatColor.opacity(0.15))
+                        .foregroundStyle(threatColor)
+                        .clipShape(Capsule())
+                }
+                .padding(.leading, 14)
+                .transition(.opacity)
+            }
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(isSelected ? Color.accentColor.opacity(0.08) : (isHovering ? Color.primary.opacity(0.03) : Color.clear))
         .contentShape(Rectangle())
         .onTapGesture { onSelect() }
         .onHover { isHovering = $0 }
-    }
-
-    private var threatBadge: some View {
-        Circle()
-            .fill(threatColor)
-            .frame(width: 10, height: 10)
-    }
-
-    private var scoreBadge: some View {
-        Text("Score: \(verdict.score)")
-            .font(.caption2)
-            .fontWeight(.medium)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(threatColor.opacity(0.15))
-            .foregroundStyle(threatColor)
-            .clipShape(Capsule())
     }
 
     private var threatColor: Color {

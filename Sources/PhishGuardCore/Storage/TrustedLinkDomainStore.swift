@@ -28,6 +28,18 @@ public final class TrustedLinkDomainStore: @unchecked Sendable {
         )
     }
 
+    /// Removes a domain from the trusted list.
+    public func remove(domain: String) throws {
+        let normalized = domain.lowercased()
+        let target = DatabaseManager.trustedLinkDomains.filter(DatabaseManager.trustedLinkDomain == normalized)
+        try db.connection.run(target.delete())
+    }
+
+    /// Returns the number of trusted link domains.
+    public func count() throws -> Int {
+        try db.connection.scalar(DatabaseManager.trustedLinkDomains.count)
+    }
+
     /// Returns all trusted link domains.
     public func allDomains() throws -> Set<String> {
         let query = DatabaseManager.trustedLinkDomains

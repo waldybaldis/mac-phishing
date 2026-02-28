@@ -32,6 +32,12 @@ public final class DatabaseManager: @unchecked Sendable {
     static let trustedLinkDomain = SQLite.Expression<String>("domain")
     static let trustedLinkTimestamp = SQLite.Expression<Double>("timestamp")
 
+    static let safeonwebCampaigns = Table("safeonweb_campaigns")
+    static let safeonwebBrand = SQLite.Expression<String>("brand")
+    static let safeonwebPublishedDate = SQLite.Expression<Double>("published_date")
+    static let safeonwebFetchedDate = SQLite.Expression<Double>("fetched_date")
+    static let safeonwebArticleTitle = SQLite.Expression<String>("article_title")
+
     public init(databasePath: String? = nil) throws {
         let path = databasePath ?? Self.defaultDatabasePath()
 
@@ -108,6 +114,14 @@ public final class DatabaseManager: @unchecked Sendable {
         try connection.run(Self.trustedLinkDomains.create(ifNotExists: true) { t in
             t.column(Self.trustedLinkDomain, primaryKey: true)
             t.column(Self.trustedLinkTimestamp)
+        })
+
+        try connection.run(Self.safeonwebCampaigns.create(ifNotExists: true) { t in
+            t.column(Self.safeonwebBrand)
+            t.column(Self.safeonwebPublishedDate)
+            t.column(Self.safeonwebFetchedDate)
+            t.column(Self.safeonwebArticleTitle)
+            t.unique(Self.safeonwebBrand, Self.safeonwebArticleTitle)
         })
 
         try connection.run(Self.verdicts.createIndex(Self.verdictTimestamp, ifNotExists: true))

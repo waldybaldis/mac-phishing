@@ -2,11 +2,15 @@ import Foundation
 
 /// Check #7: Detects when the From display name suggests a brand that doesn't match the sender domain.
 /// For example: `DPD <john@gmail.com>` — display name "DPD" has no relation to "gmail.com".
-/// Adds +2 points when the display name doesn't appear in the sender domain or local part.
+/// Adds +3 points when the display name doesn't appear in the sender domain or local part.
+/// Adds +2 more points if no link in the email points to the brand's domain either.
 public struct BrandImpersonationCheck: PhishingCheck {
     public let name = "Brand Impersonation Check"
+    private let campaignStore: SafeonwebCampaignStore?
 
-    public init() {}
+    public init(campaignStore: SafeonwebCampaignStore? = nil) {
+        self.campaignStore = campaignStore
+    }
 
     public func analyze(email: ParsedEmail, context: AnalysisContext) -> [CheckResult] {
         // Extract display name from "Name <email>" format
@@ -39,12 +43,45 @@ public struct BrandImpersonationCheck: PhishingCheck {
             }
         }
 
+        var results: [CheckResult] = []
+
         // Display name doesn't match domain or local part — potential brand impersonation
-        return [CheckResult(
+        results.append(CheckResult(
             checkName: name,
-            points: 2,
+            points: 3,
             reason: "Display name \"\(displayName)\" does not match sender domain \"\(domain)\""
-        )]
+        ))
+
+        // Check if any link in the email points to a domain containing the brand name.
+        // If not, the email claims to be from a brand but doesn't even link to it — highly suspicious.
+        if !context.linkDomains.isEmpty {
+            let brandInLinks = context.linkDomains.contains { linkDomain in
+                words.contains { word in linkDomain.contains(word) }
+            }
+            if !brandInLinks {
+                results.append(CheckResult(
+                    checkName: name,
+                    points: 2,
+                    reason: "No links point to \"\(displayName)\" — all links go to unrelated domains"
+                ))
+            }
+        }
+
+        // Check if any display name word matches an active Safeonweb campaign brand.
+        if let store = campaignStore {
+            let hasCampaign = words.contains { word in
+                (try? store.isActiveCampaignBrand(word)) ?? false
+            }
+            if hasCampaign {
+                results.append(CheckResult(
+                    checkName: name,
+                    points: 2,
+                    reason: "Active Safeonweb phishing campaign targets \"\(displayName)\""
+                ))
+            }
+        }
+
+        return results
     }
 
     /// Extracts the display name portion from a "Name <email>" string.

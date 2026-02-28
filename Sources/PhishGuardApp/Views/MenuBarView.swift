@@ -8,18 +8,17 @@ struct MenuBarView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
+            HStack(spacing: 8) {
                 Image(systemName: "shield.checkered")
-                    .font(.title2)
+                    .font(.title3)
+                    .foregroundStyle(.tint)
                 Text("PhishGuard")
-                    .font(.headline)
+                    .font(.system(.headline, weight: .semibold))
                 Spacer()
                 StatusIndicatorView(isMonitoring: accountManager.isAnyMonitoring)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 10)
-
-            Divider()
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
 
             // Tab selector
             Picker("", selection: $selectedTab) {
@@ -28,8 +27,10 @@ struct MenuBarView: View {
                 Text("Settings").tag(2)
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 8)
+
+            Divider()
 
             // Content
             switch selectedTab {
@@ -47,18 +48,25 @@ struct MenuBarView: View {
 
             // Footer
             HStack {
-                Text("Blacklist: 48,231 domains")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                let activeCount = accountManager.accounts.filter(\.isActivated).count
+                if activeCount > 0 {
+                    Text("\(activeCount) account\(activeCount == 1 ? "" : "s") active")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("No accounts active")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
                 Spacer()
                 Button("Quit") {
                     NSApplication.shared.terminate(nil)
                 }
-                .font(.caption)
+                .font(.caption2)
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 14)
             .padding(.vertical, 6)
         }
         .frame(width: 360, height: 480)

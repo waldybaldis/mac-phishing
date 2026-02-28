@@ -6,23 +6,23 @@ struct AccountSetupView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 // Header with refresh
                 HStack {
                     Text("Mail Accounts")
-                        .font(.headline)
+                        .font(.system(.subheadline, weight: .semibold))
                     Spacer()
                     Button {
                         Task { await accountManager.discoverAccounts() }
                     } label: {
                         Image(systemName: "arrow.clockwise")
-                            .font(.caption)
+                            .font(.caption2)
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
                     .disabled(accountManager.isDiscovering)
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 14)
                 .padding(.top, 8)
 
                 if accountManager.isDiscovering {

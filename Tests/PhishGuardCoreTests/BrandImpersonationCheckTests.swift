@@ -19,7 +19,7 @@ final class BrandImpersonationCheckTests: XCTestCase {
         )
         let results = check.analyze(email: email, context: .empty)
         XCTAssertEqual(results.count, 1)
-        XCTAssertEqual(results[0].points, 2)
+        XCTAssertEqual(results[0].points, 3)
         XCTAssert(results[0].reason.contains("DPD"))
         XCTAssert(results[0].reason.contains("gmail.com"))
     }
@@ -37,7 +37,7 @@ final class BrandImpersonationCheckTests: XCTestCase {
         )
         let results = check.analyze(email: email, context: .empty)
         XCTAssertEqual(results.count, 1)
-        XCTAssertEqual(results[0].points, 2)
+        XCTAssertEqual(results[0].points, 3)
     }
 
     // MARK: - Should NOT flag (legitimate)
@@ -145,7 +145,7 @@ final class BrandImpersonationCheckTests: XCTestCase {
         )
         let results = check.analyze(email: email, context: .empty)
         XCTAssertEqual(results.count, 1)
-        XCTAssertEqual(results[0].points, 2)
+        XCTAssertEqual(results[0].points, 3)
     }
 
     func testDPDFromPickupServices() {
@@ -162,5 +162,108 @@ final class BrandImpersonationCheckTests: XCTestCase {
         )
         let results = check.analyze(email: email, context: .empty)
         XCTAssertTrue(results.isEmpty, "DPD in local part 'dpd' should not flag")
+    }
+
+    // MARK: - Link domain vs brand
+
+    func testLinksToUnrelatedDomain() {
+        // Argenta phishing: display name "ARGENTA" but links go to tradebulls.in
+        let email = ParsedEmail(
+            messageId: "test-11",
+            from: "ARGENTA <digipass-new@tradebulls.in>",
+            returnPath: nil,
+            authenticationResults: nil,
+            subject: "Update uw diensten",
+            htmlBody: "<a href=\"http://delivery.tradebulls.in/path\">Meer informatie</a>",
+            textBody: nil,
+            receivedDate: Date()
+        )
+        let context = AnalysisContext.from(email: email)
+        let results = check.analyze(email: email, context: context)
+        XCTAssertEqual(results.count, 2)
+        XCTAssertEqual(results[0].points, 3, "Brand impersonation base score")
+        XCTAssertEqual(results[1].points, 2, "No links point to brand domain")
+    }
+
+    func testLinksPointToBrandDomain() {
+        // Brand impersonation but links DO go to the brand — only base flag, no link flag
+        let email = ParsedEmail(
+            messageId: "test-12",
+            from: "Argenta <noreply@scammer.net>",
+            returnPath: nil,
+            authenticationResults: nil,
+            subject: "Update",
+            htmlBody: "<a href=\"https://www.argenta.be/login\">Login</a>",
+            textBody: nil,
+            receivedDate: Date()
+        )
+        let context = AnalysisContext.from(email: email)
+        let results = check.analyze(email: email, context: context)
+        XCTAssertEqual(results.count, 1, "Only base impersonation, links contain brand")
+        XCTAssertEqual(results[0].points, 3)
+    }
+
+    func testNoLinksNoExtraFlag() {
+        // No links in email — only base impersonation flag, no link check
+        let email = ParsedEmail(
+            messageId: "test-13",
+            from: "PayPal <alerts@scammer.net>",
+            returnPath: nil,
+            authenticationResults: nil,
+            subject: "Alert",
+            htmlBody: "<p>Plain text email</p>",
+            textBody: nil,
+            receivedDate: Date()
+        )
+        let context = AnalysisContext.from(email: email)
+        let results = check.analyze(email: email, context: context)
+        XCTAssertEqual(results.count, 1, "No links means no link domain check")
+        XCTAssertEqual(results[0].points, 3)
+    }
+
+    // MARK: - Safeonweb campaign boost
+
+    func testCampaignBrandBoostsScore() throws {
+        let db = try DatabaseManager(inMemory: true)
+        let campaignStore = SafeonwebCampaignStore(database: db)
+        try campaignStore.insertBrands(["argenta"], publishedDate: Date(), articleTitle: "Phishing in naam van Argenta")
+
+        let checkWithCampaign = BrandImpersonationCheck(campaignStore: campaignStore)
+
+        let email = ParsedEmail(
+            messageId: "test-campaign-1",
+            from: "ARGENTA <digipass-new@tradebulls.in>",
+            returnPath: nil,
+            authenticationResults: nil,
+            subject: "Update uw diensten",
+            htmlBody: nil,
+            textBody: nil,
+            receivedDate: Date()
+        )
+        let results = checkWithCampaign.analyze(email: email, context: .empty)
+
+        // Should have base impersonation (3) + campaign boost (2)
+        XCTAssertTrue(results.contains { $0.points == 3 }, "Should have base impersonation score")
+        XCTAssertTrue(results.contains { $0.points == 2 && $0.reason.contains("Safeonweb") },
+                      "Should have Safeonweb campaign boost")
+    }
+
+    func testNoCampaignStoreNoBoost() {
+        // Default check (no campaign store) should not produce campaign boost
+        let email = ParsedEmail(
+            messageId: "test-campaign-2",
+            from: "ARGENTA <digipass-new@tradebulls.in>",
+            returnPath: nil,
+            authenticationResults: nil,
+            subject: "Update uw diensten",
+            htmlBody: nil,
+            textBody: nil,
+            receivedDate: Date()
+        )
+        let results = check.analyze(email: email, context: .empty)
+
+        XCTAssertEqual(results.count, 1, "Without campaign store, only base impersonation")
+        XCTAssertEqual(results[0].points, 3)
+        XCTAssertFalse(results[0].reason.contains("Safeonweb"))
     }
 }

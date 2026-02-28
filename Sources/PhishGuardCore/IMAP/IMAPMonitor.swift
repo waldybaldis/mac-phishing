@@ -296,6 +296,19 @@ public final class IMAPMonitor: @unchecked Sendable {
         public let storageTime: TimeInterval
         public let totalTime: TimeInterval
         public let skippedParts: Int
+
+        public init(emailCount: Int, fetchInfoTime: TimeInterval, fetchBodiesTime: TimeInterval,
+                    fetchHeadersTime: TimeInterval, analysisTime: TimeInterval, storageTime: TimeInterval,
+                    totalTime: TimeInterval, skippedParts: Int) {
+            self.emailCount = emailCount
+            self.fetchInfoTime = fetchInfoTime
+            self.fetchBodiesTime = fetchBodiesTime
+            self.fetchHeadersTime = fetchHeadersTime
+            self.analysisTime = analysisTime
+            self.storageTime = storageTime
+            self.totalTime = totalTime
+            self.skippedParts = skippedParts
+        }
     }
 
     /// Fetches the last `count` emails, runs phishing analysis, and returns timing stats.
@@ -337,36 +350,27 @@ public final class IMAPMonitor: @unchecked Sendable {
 
         logger.info("Benchmark: fetched \(messageInfos.count) message infos in \(String(format: "%.2f", p1Time))s")
 
-        // Create worker connections in parallel for Phases 2 & 3
-        let workerCount = 10
+        // Create worker connections sequentially to avoid rate-limiting (e.g. Yahoo)
+        let maxWorkers = 3
         let connStart = CFAbsoluteTimeGetCurrent()
-        let workerResults: [IMAPServer?] = await withTaskGroup(of: (Int, IMAPServer?).self) { group in
-            for i in 0..<workerCount {
-                group.addTask {
-                    let worker = IMAPServer(host: self.account.imapServer, port: self.account.imapPort)
-                    do {
-                        try await worker.connect()
-                        switch credential {
-                        case .password(let password):
-                            try await worker.login(username: self.account.username, password: password)
-                        case .oauth2(let email, let accessToken):
-                            try await worker.authenticateXOAUTH2(email: email, accessToken: accessToken)
-                        }
-                        try await worker.selectMailbox("INBOX")
-                        return (i, worker)
-                    } catch {
-                        logger.warning("Benchmark: failed to create worker \(i): \(error.localizedDescription)")
-                        return (i, nil)
-                    }
+        var workers: [IMAPServer] = []
+        for i in 0..<maxWorkers {
+            let worker = IMAPServer(host: self.account.imapServer, port: self.account.imapPort)
+            do {
+                try await worker.connect()
+                switch credential {
+                case .password(let password):
+                    try await worker.login(username: self.account.username, password: password)
+                case .oauth2(let email, let accessToken):
+                    try await worker.authenticateXOAUTH2(email: email, accessToken: accessToken)
                 }
+                try await worker.selectMailbox("INBOX")
+                workers.append(worker)
+            } catch {
+                logger.warning("Benchmark: failed to create worker \(i): \(error.localizedDescription)")
+                break  // Stop trying if a connection fails (likely rate-limited)
             }
-            var results = Array<IMAPServer?>(repeating: nil, count: workerCount)
-            for await (i, worker) in group {
-                results[i] = worker
-            }
-            return results
         }
-        var workers: [IMAPServer] = workerResults.compactMap { $0 }
         let connTime = CFAbsoluteTimeGetCurrent() - connStart
         logger.info("Benchmark: \(workers.count) worker connections in \(String(format: "%.2f", connTime))s")
         if workers.isEmpty { workers.append(benchServer) }

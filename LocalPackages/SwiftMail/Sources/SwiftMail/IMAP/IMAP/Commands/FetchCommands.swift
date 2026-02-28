@@ -13,8 +13,10 @@ struct FetchMessageInfoCommand<T: MessageIdentifier>: IMAPTaggedCommand {
     /// The set of message identifiers to fetch
         let identifierSet: MessageIdentifierSet<T>
     
-    /// Custom timeout for this operation
-	let timeoutSeconds = 10
+    /// Timeout scales with the number of messages being fetched (minimum 30s, +1s per 10 messages)
+	var timeoutSeconds: Int {
+		max(30, 10 + identifierSet.count / 10)
+	}
     
     /// Initialize a new fetch headers command
     /// - Parameter identifierSet: The set of message identifiers to fetch

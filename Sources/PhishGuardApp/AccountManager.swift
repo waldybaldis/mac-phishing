@@ -85,6 +85,8 @@ final class AccountManager: ObservableObject {
     let verdictStore: VerdictStore
     let allowlistStore: AllowlistStore
     let trustedLinkDomainStore: TrustedLinkDomainStore
+    let campaignStore: SafeonwebCampaignStore
+    let safeonwebUpdater: SafeonwebUpdater
     private let dbManager: DatabaseManager?
 
     private static let activatedAccountsKey = "activatedAccounts"
@@ -96,23 +98,32 @@ final class AccountManager: ObservableObject {
             let blacklistStore = BlacklistStore(database: db)
             let allowlistStore = AllowlistStore(database: db)
             let trustedLinkDomainStore = TrustedLinkDomainStore(database: db)
+            let campaignStore = SafeonwebCampaignStore(database: db)
             self.verdictStore = VerdictStore(database: db)
             self.allowlistStore = allowlistStore
             self.trustedLinkDomainStore = trustedLinkDomainStore
-            self.analyzer = PhishingAnalyzer(blacklistStore: blacklistStore, allowlistStore: allowlistStore, trustedLinkDomainStore: trustedLinkDomainStore)
+            self.campaignStore = campaignStore
+            self.safeonwebUpdater = SafeonwebUpdater(campaignStore: campaignStore)
+            self.analyzer = PhishingAnalyzer(blacklistStore: blacklistStore, allowlistStore: allowlistStore, trustedLinkDomainStore: trustedLinkDomainStore, campaignStore: campaignStore)
         } else {
             let memDb = try! DatabaseManager(databasePath: ":memory:")
+            let campaignStore = SafeonwebCampaignStore(database: memDb)
             self.verdictStore = VerdictStore(database: memDb)
             self.allowlistStore = AllowlistStore(database: memDb)
             self.trustedLinkDomainStore = TrustedLinkDomainStore(database: memDb)
+            self.campaignStore = campaignStore
+            self.safeonwebUpdater = SafeonwebUpdater(campaignStore: campaignStore)
             self.analyzer = PhishingAnalyzer(checks: [
                 AuthHeaderCheck(),
                 ReturnPathCheck(),
                 LinkMismatchCheck(trustedLinkDomainStore: self.trustedLinkDomainStore),
                 IPURLCheck(),
                 SuspiciousTLDCheck(),
+                BrandImpersonationCheck(campaignStore: campaignStore),
             ])
         }
+
+        safeonwebUpdater.startPeriodicRefresh()
     }
 
     /// Discovers accounts from Mail.app and merges with saved activation state.
@@ -220,66 +231,84 @@ final class AccountManager: ObservableObject {
     @Published var scanRunning = false
     @Published var scanResult: IMAPMonitor.BenchmarkResult?
 
-    /// Scans the last `count` emails (or all if 0) from the given account's mailbox.
-    func scanMailbox(accountId: String, count: Int) async {
-        guard let index = accounts.firstIndex(where: { $0.id == accountId }) else {
-            logger.error("Scan: account \(accountId) not found")
-            return
-        }
-
-        let account = accounts[index]
-
-        // Resolve credential from Keychain
-        let credential: IMAPCredential
-        if account.usesOAuth {
-            guard let refreshToken = KeychainHelper.loadRefreshToken(accountId: accountId) else {
-                logger.error("Benchmark: no OAuth refresh token for \(accountId)")
-                return
-            }
-            let oauthProvider = account.oauthProvider!
-            do {
-                let tokens = try await oauthManager.refreshAccessToken(provider: oauthProvider, refreshToken: refreshToken)
-                KeychainHelper.saveTokens(
-                    accountId: accountId,
-                    accessToken: tokens.accessToken,
-                    refreshToken: tokens.refreshToken ?? refreshToken
-                )
-                credential = .oauth2(email: account.discovered.email, accessToken: tokens.accessToken)
-            } catch {
-                logger.error("Benchmark: token refresh failed: \(error.localizedDescription)")
-                return
-            }
-        } else {
-            guard let password = KeychainHelper.loadPassword(accountId: accountId) else {
-                logger.error("Benchmark: no password for \(accountId)")
-                return
-            }
-            credential = .password(password)
-        }
-
-        let config = AccountConfig(
-            displayName: account.discovered.name,
-            imapServer: account.discovered.server,
-            imapPort: account.discovered.port,
-            username: account.discovered.email,
-            useTLS: account.discovered.usesSSL,
-            authMethod: account.usesOAuth ? .oauth2 : .password
-        )
-
-        let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore)
+    /// Scans the last `count` emails from each activated account's mailbox.
+    func scanAllAccounts(count: Int) async {
+        let activeAccounts = accounts.filter(\.isActivated)
+        guard !activeAccounts.isEmpty else { return }
 
         scanRunning = true
         scanResult = nil
 
-        do {
-            let result = try await monitor.benchmarkScan(count: count, credential: credential)
-            scanResult = result
-            logger.info("Scan complete: \(result.emailCount) emails in \(String(format: "%.2f", result.totalTime))s")
-        } catch {
-            logger.error("Scan failed: \(error.localizedDescription)")
+        var totalEmails = 0
+        var totalTime: TimeInterval = 0
+        var totalSkipped = 0
+
+        for account in activeAccounts {
+            logger.info("Scanning \(account.discovered.email)...")
+
+            guard let credential = await resolveCredential(for: account) else {
+                logger.error("Scan: could not resolve credentials for \(account.discovered.email)")
+                continue
+            }
+
+            let config = AccountConfig(
+                displayName: account.discovered.name,
+                imapServer: account.discovered.server,
+                imapPort: account.discovered.port,
+                username: account.discovered.email,
+                useTLS: account.discovered.usesSSL,
+                authMethod: account.usesOAuth ? .oauth2 : .password
+            )
+
+            let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore)
+
+            do {
+                let result = try await monitor.benchmarkScan(count: count, credential: credential)
+                totalEmails += result.emailCount
+                totalTime += result.totalTime
+                totalSkipped += result.skippedParts
+                logger.info("Scan \(account.discovered.email): \(result.emailCount) emails in \(String(format: "%.2f", result.totalTime))s")
+            } catch {
+                logger.error("Scan \(account.discovered.email) failed: \(error.localizedDescription)")
+            }
         }
 
+        scanResult = IMAPMonitor.BenchmarkResult(
+            emailCount: totalEmails,
+            fetchInfoTime: 0,
+            fetchBodiesTime: 0,
+            fetchHeadersTime: 0,
+            analysisTime: 0,
+            storageTime: 0,
+            totalTime: totalTime,
+            skippedParts: totalSkipped
+        )
+        logger.info("Scan complete: \(totalEmails) emails across \(activeAccounts.count) accounts in \(String(format: "%.2f", totalTime))s")
+
         scanRunning = false
+    }
+
+    /// Resolves IMAP credentials for an account from Keychain.
+    private func resolveCredential(for account: MonitoredAccount) async -> IMAPCredential? {
+        if account.usesOAuth {
+            guard let refreshToken = KeychainHelper.loadRefreshToken(accountId: account.id),
+                  let oauthProv = account.oauthProvider else { return nil }
+            do {
+                let tokens = try await oauthManager.refreshAccessToken(provider: oauthProv, refreshToken: refreshToken)
+                KeychainHelper.saveTokens(
+                    accountId: account.id,
+                    accessToken: tokens.accessToken,
+                    refreshToken: tokens.refreshToken ?? refreshToken
+                )
+                return .oauth2(email: account.discovered.email, accessToken: tokens.accessToken)
+            } catch {
+                logger.error("Token refresh failed for \(account.discovered.email): \(error.localizedDescription)")
+                return nil
+            }
+        } else {
+            guard let password = KeychainHelper.loadPassword(accountId: account.id) else { return nil }
+            return .password(password)
+        }
     }
 
     /// Deletes an email from the IMAP server using the stored UID.
@@ -291,38 +320,11 @@ final class AccountManager: ObservableObject {
         }
 
         // Find the activated account to create a monitor for deletion
-        guard let account = accounts.first(where: { $0.isActivated }) else {
-            logger.error("No activated account to delete email from")
+        guard let account = accounts.first(where: { $0.isActivated }),
+              let credential = await resolveCredential(for: account) else {
+            logger.error("No activated account or credentials to delete email from")
             try? verdictStore.delete(messageId: verdict.messageId)
             return
-        }
-
-        let credential: IMAPCredential
-        if account.usesOAuth {
-            guard let refreshToken = KeychainHelper.loadRefreshToken(accountId: account.id) else {
-                try? verdictStore.delete(messageId: verdict.messageId)
-                return
-            }
-            let oauthProvider = account.oauthProvider!
-            do {
-                let tokens = try await oauthManager.refreshAccessToken(provider: oauthProvider, refreshToken: refreshToken)
-                KeychainHelper.saveTokens(
-                    accountId: account.id,
-                    accessToken: tokens.accessToken,
-                    refreshToken: tokens.refreshToken ?? refreshToken
-                )
-                credential = .oauth2(email: account.discovered.email, accessToken: tokens.accessToken)
-            } catch {
-                logger.error("Delete: token refresh failed: \(error.localizedDescription)")
-                try? verdictStore.delete(messageId: verdict.messageId)
-                return
-            }
-        } else {
-            guard let password = KeychainHelper.loadPassword(accountId: account.id) else {
-                try? verdictStore.delete(messageId: verdict.messageId)
-                return
-            }
-            credential = .password(password)
         }
 
         let config = AccountConfig(

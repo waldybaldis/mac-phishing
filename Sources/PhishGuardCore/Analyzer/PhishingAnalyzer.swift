@@ -20,7 +20,8 @@ public final class PhishingAnalyzer: @unchecked Sendable {
     ///   - blacklistStore: The blacklist store for domain lookups.
     ///   - allowlistStore: Optional allowlist store for trusted domains.
     ///   - trustedLinkDomainStore: Optional store for user-trusted link domains.
-    public convenience init(blacklistStore: BlacklistStore, allowlistStore: AllowlistStore? = nil, trustedLinkDomainStore: TrustedLinkDomainStore? = nil) {
+    ///   - campaignStore: Optional Safeonweb campaign store for active phishing campaign detection.
+    public convenience init(blacklistStore: BlacklistStore, allowlistStore: AllowlistStore? = nil, trustedLinkDomainStore: TrustedLinkDomainStore? = nil, campaignStore: SafeonwebCampaignStore? = nil) {
         let checks: [PhishingCheck] = [
             AuthHeaderCheck(),
             ReturnPathCheck(),
@@ -28,7 +29,7 @@ public final class PhishingAnalyzer: @unchecked Sendable {
             LinkMismatchCheck(trustedLinkDomainStore: trustedLinkDomainStore),
             IPURLCheck(),
             SuspiciousTLDCheck(),
-            BrandImpersonationCheck(),
+            BrandImpersonationCheck(campaignStore: campaignStore),
         ]
         self.init(checks: checks, allowlistStore: allowlistStore)
     }

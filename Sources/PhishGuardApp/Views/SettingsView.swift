@@ -7,162 +7,251 @@ struct SettingsView: View {
     @State private var sensitivityThreshold: Double = 3.0
     @State private var movePhishingToJunk = true
     @State private var showNotifications = true
-    @State private var allowlistedDomains: [String] = ["apple.com", "icloud.com"]
-    @State private var newDomain = ""
+    @State private var senderDomainCount: Int = 0
+    @State private var linkDomainCount: Int = 0
+    @State private var showSenderSheet = false
+    @State private var showLinkSheet = false
     @State private var blacklistCount = 48231
     @State private var lastUpdated = Date().addingTimeInterval(-3600)
+    @State private var safeonwebBrandCount = 0
+    @State private var safeonwebLastUpdated: Date?
+    @State private var safeonwebRefreshing = false
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Sensitivity
-                Group {
-                    Text("Detection Sensitivity")
-                        .font(.headline)
-
-                    VStack(alignment: .leading) {
-                        Slider(value: $sensitivityThreshold, in: 1...10, step: 1)
-                        HStack {
-                            Text("Sensitive")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text("Score threshold: \(Int(sensitivityThreshold))")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                            Spacer()
-                            Text("Conservative")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+            VStack(alignment: .leading, spacing: 0) {
+                // Detection Sensitivity
+                sectionHeader("Detection Sensitivity")
+                VStack(alignment: .leading, spacing: 4) {
+                    Slider(value: $sensitivityThreshold, in: 1...10, step: 1)
+                    HStack {
+                        Text("Sensitive")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("Threshold: \(Int(sensitivityThreshold))")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                        Spacer()
+                        Text("Conservative")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
+                .padding(.horizontal, 14)
 
-                Divider()
+                sectionDivider
 
                 // Actions
-                Group {
-                    Text("Actions")
-                        .font(.headline)
-
-                    Toggle("Move phishing emails to Junk", isOn: $movePhishingToJunk)
+                sectionHeader("Actions")
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle("Move phishing to Junk", isOn: $movePhishingToJunk)
+                        .font(.callout)
                     Toggle("Show notifications", isOn: $showNotifications)
+                        .font(.callout)
                 }
+                .padding(.horizontal, 14)
 
-                Divider()
+                sectionDivider
 
-                // Allowlist
-                Group {
-                    Text("Trusted Domains (Allowlist)")
-                        .font(.headline)
-
-                    ForEach(allowlistedDomains, id: \.self) { domain in
-                        HStack {
-                            Text(domain)
-                                .font(.system(.body, design: .monospaced))
-                            Spacer()
-                            Button(role: .destructive) {
-                                allowlistedDomains.removeAll { $0 == domain }
-                            } label: {
-                                Image(systemName: "minus.circle")
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-
+                // Trusted Domains
+                sectionHeader("Trusted Domains")
+                VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        TextField("domain.com", text: $newDomain)
-                            .textFieldStyle(.roundedBorder)
-                        Button("Add") {
-                            let domain = newDomain.trimmingCharacters(in: .whitespaces).lowercased()
-                            if !domain.isEmpty && !allowlistedDomains.contains(domain) {
-                                allowlistedDomains.append(domain)
-                                newDomain = ""
-                            }
-                        }
-                        .disabled(newDomain.trimmingCharacters(in: .whitespaces).isEmpty)
-                    }
-                }
-
-                Divider()
-
-                // Blacklist info
-                Group {
-                    Text("Phishing Blacklist")
-                        .font(.headline)
-
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("\(blacklistCount) domains")
-                                .font(.subheadline)
-                            Text("Last updated: \(lastUpdated, style: .relative) ago")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        Text("Senders — \(senderDomainCount) domains")
+                            .font(.caption)
                         Spacer()
-                        Button("Refresh Now") {
-                            // Trigger blacklist update
+                        Button("Manage") { showSenderSheet = true }
+                            .controlSize(.small)
+                            .buttonStyle(.bordered)
+                    }
+                    HStack {
+                        Text("Links — \(linkDomainCount) domains")
+                            .font(.caption)
+                        Spacer()
+                        Button("Manage") { showLinkSheet = true }
+                            .controlSize(.small)
+                            .buttonStyle(.bordered)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .onAppear { refreshDomainCounts() }
+                .sheet(isPresented: $showSenderSheet, onDismiss: { refreshDomainCounts() }) {
+                    if let mgr = accountManager {
+                        DomainListSheet(
+                            title: "Trusted Senders",
+                            onAdd: { try mgr.allowlistStore.add(domain: $0) },
+                            onRemove: { try mgr.allowlistStore.remove(domain: $0) },
+                            loadDomains: { try mgr.allowlistStore.allDomains() }
+                        )
+                    }
+                }
+                .sheet(isPresented: $showLinkSheet, onDismiss: { refreshDomainCounts() }) {
+                    if let mgr = accountManager {
+                        DomainListSheet(
+                            title: "Trusted Links",
+                            onAdd: { try mgr.trustedLinkDomainStore.add(domain: $0) },
+                            onRemove: { try mgr.trustedLinkDomainStore.remove(domain: $0) },
+                            loadDomains: { try Array(mgr.trustedLinkDomainStore.allDomains()) }
+                        )
+                    }
+                }
+
+                sectionDivider
+
+                // Blacklist
+                sectionHeader("Phishing Blacklist")
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(blacklistCount.formatted()) domains")
+                            .font(.caption)
+                        Text("Updated \(lastUpdated, style: .relative) ago")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    Spacer()
+                    Button("Refresh") {
+                        // Trigger blacklist update
+                    }
+                    .controlSize(.small)
+                    .buttonStyle(.bordered)
+                }
+                .padding(.horizontal, 14)
+
+                sectionDivider
+
+                // Safeonweb Campaigns
+                sectionHeader("Safeonweb Campaigns")
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(safeonwebBrandCount) active brands")
+                            .font(.caption)
+                        if let updated = safeonwebLastUpdated {
+                            Text("Updated \(updated, style: .relative) ago")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        } else {
+                            Text("Never updated")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
                         }
-                        .buttonStyle(.bordered)
+                    }
+                    Spacer()
+                    Button {
+                        guard let mgr = accountManager else { return }
+                        safeonwebRefreshing = true
+                        Task {
+                            _ = try? await mgr.safeonwebUpdater.update()
+                            await MainActor.run {
+                                safeonwebBrandCount = (try? mgr.campaignStore.count()) ?? 0
+                                safeonwebLastUpdated = try? mgr.campaignStore.lastFetched()
+                                safeonwebRefreshing = false
+                            }
+                        }
+                    } label: {
+                        if safeonwebRefreshing {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Text("Refresh")
+                        }
+                    }
+                    .controlSize(.small)
+                    .buttonStyle(.bordered)
+                    .disabled(safeonwebRefreshing)
+                }
+                .padding(.horizontal, 14)
+                .onAppear {
+                    refreshSafeonwebStats()
+                }
+                .task {
+                    // Check staleness on appear and refresh if needed
+                    guard let mgr = accountManager else { return }
+                    if (try? mgr.safeonwebUpdater.needsRefresh()) == true {
+                        safeonwebRefreshing = true
+                        _ = try? await mgr.safeonwebUpdater.update()
+                        await MainActor.run {
+                            refreshSafeonwebStats()
+                            safeonwebRefreshing = false
+                        }
                     }
                 }
 
                 if accountManager != nil {
-                    Divider()
+                    sectionDivider
 
                     // Scan Mailbox
-                    Group {
-                        Text("Scan Mailbox")
-                            .font(.headline)
+                    sectionHeader("Scan Mailbox")
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Picker("Count", selection: $scanCount) {
+                                Text("100").tag(100)
+                                Text("250").tag(250)
+                                Text("500").tag(500)
+                                Text("1K").tag(1000)
+                                Text("All").tag(0)
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
 
-                        Text("Fetch and analyze existing emails from your inbox for phishing threats.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Picker("Emails to scan", selection: $scanCount) {
-                            Text("Last 100").tag(100)
-                            Text("Last 250").tag(250)
-                            Text("Last 500").tag(500)
-                            Text("Last 1000").tag(1000)
-                            Text("All").tag(0)
-                        }
-                        .pickerStyle(.segmented)
-
-                        if let result = accountManager?.scanResult {
-                            VStack(alignment: .leading, spacing: 2) {
+                            if let result = accountManager?.scanResult {
                                 Text("\(result.emailCount) emails scanned in \(String(format: "%.1f", result.totalTime))s")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                Text("Avg \(String(format: "%.3f", result.totalTime / max(Double(result.emailCount), 1)))s/email")
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
                         }
-
-                        HStack {
-                            Button("Scan") {
-                                guard let mgr = accountManager,
-                                      let active = mgr.accounts.first(where: { $0.isActivated }) else { return }
-                                Task {
-                                    await mgr.scanMailbox(accountId: active.id, count: scanCount)
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(accountManager?.scanRunning == true
-                                      || accountManager?.accounts.contains(where: \.isActivated) != true)
-
+                        Spacer()
+                        Button {
+                            guard let mgr = accountManager else { return }
+                            Task { await mgr.scanAllAccounts(count: scanCount) }
+                        } label: {
                             if accountManager?.scanRunning == true {
                                 ProgressView()
                                     .controlSize(.small)
-                                Text("Scanning…")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text("Scan")
                             }
                         }
+                        .controlSize(.small)
+                        .buttonStyle(.bordered)
+                        .disabled(accountManager?.scanRunning == true
+                                  || accountManager?.accounts.contains(where: \.isActivated) != true)
                     }
+                    .padding(.horizontal, 14)
                 }
             }
-            .padding()
+            .padding(.vertical, 10)
         }
+    }
+
+    // MARK: - Helpers
+
+    private func refreshDomainCounts() {
+        guard let mgr = accountManager else { return }
+        senderDomainCount = (try? mgr.allowlistStore.allDomains().count) ?? 0
+        linkDomainCount = (try? mgr.trustedLinkDomainStore.count()) ?? 0
+    }
+
+    private func refreshSafeonwebStats() {
+        guard let mgr = accountManager else { return }
+        safeonwebBrandCount = (try? mgr.campaignStore.count()) ?? 0
+        safeonwebLastUpdated = try? mgr.campaignStore.lastFetched()
+    }
+
+    // MARK: - Section Helpers
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.system(.subheadline, weight: .semibold))
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 14)
+            .padding(.top, 10)
+            .padding(.bottom, 6)
+    }
+
+    private var sectionDivider: some View {
+        Divider()
+            .padding(.horizontal, 10)
+            .padding(.top, 8)
     }
 }
