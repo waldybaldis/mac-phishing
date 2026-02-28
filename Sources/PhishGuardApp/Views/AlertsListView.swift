@@ -63,6 +63,8 @@ struct AlertsListView: View {
         let senderDomain = ParsedEmail.extractDomain(from: verdict.from) ?? ""
         if !senderDomain.isEmpty {
             try? accountManager.allowlistStore.add(domain: senderDomain)
+            // Mark all existing verdicts from this domain as safe too
+            try? accountManager.verdictStore.markDomainSafe(domain: senderDomain)
         }
 
         // Extract href domains from link mismatch reasons and add to trusted link domains
@@ -72,9 +74,9 @@ struct AlertsListView: View {
             }
         }
 
-        try? accountManager.verdictStore.updateAction(messageId: verdict.messageId, action: .markedSafe)
+        // Refresh the full list so other alerts from the same sender disappear
         withAnimation {
-            verdicts.removeAll { $0.messageId == verdict.messageId }
+            refresh()
         }
     }
 

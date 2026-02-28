@@ -39,9 +39,11 @@ public struct LinkMismatchCheck: PhishingCheck {
         // Proofpoint (email security gateway)
         "urldefense.proofpoint.com", "urldefense.com",
         // Barracuda
-        "barracuda.com",
+        "barracuda.com", "cudasvc.com",
         // Mimecast
         "mimecast.com", "mimecastprotect.com",
+        // Webwin (Belgian newsletter/hosting platform)
+        "webwin.be",
     ]
 
     public let name = "Link Text vs URL Mismatch Check"

@@ -57,6 +57,19 @@ public final class VerdictStore: @unchecked Sendable {
         ))
     }
 
+    /// Marks all verdicts from a sender domain as safe.
+    /// Uses SQL LIKE to match the domain in the sender field (e.g., "%@example.com>").
+    @discardableResult
+    public func markDomainSafe(domain: String) throws -> Int {
+        let pattern = "%@\(domain)%"
+        let target = DatabaseManager.verdicts
+            .filter(DatabaseManager.verdictFrom.like(pattern))
+            .filter(DatabaseManager.verdictActionTaken == nil)
+        return try db.connection.run(target.update(
+            DatabaseManager.verdictActionTaken <- ActionType.markedSafe.rawValue
+        ))
+    }
+
     /// Deletes verdicts older than the specified number of days.
     @discardableResult
     public func purgeOld(olderThanDays: Int = 30) throws -> Int {
