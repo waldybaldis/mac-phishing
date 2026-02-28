@@ -58,8 +58,8 @@ public enum MailProvider: String, CaseIterable, Sendable {
     /// The authentication method appropriate for this provider.
     public var authMethod: AuthMethod {
         switch self {
-        case .gmail, .outlook, .yahoo: return .oauth2
-        case .icloud, .custom: return .password
+        case .gmail, .outlook: return .oauth2
+        case .icloud, .yahoo, .custom: return .password
         }
     }
 }

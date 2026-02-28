@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		07E580BEBB75F04D6C0225E1 /* AllowlistStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E67A48886054C75E5526C57 /* AllowlistStore.swift */; };
+		A3B7C1D2E4F5061728394A5B /* BrandImpersonationCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6D7E8F901234A5B6C7D8E9F /* BrandImpersonationCheck.swift */; };
+		B4C8D2E3F5A6172839405B6C /* BrandImpersonationCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E8F9A0B1C2D3E4F5061728 /* BrandImpersonationCheckTests.swift */; };
 		B2C3D4E5F6A7B8C9D0E1F2A3 /* TrustedLinkDomainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* TrustedLinkDomainStore.swift */; };
 		0BD63526451B829030760634 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 84C5BB9AD6FAA879D1B1132F /* SQLite */; };
 		0CE1CD25D4A2068F0F13BBCB /* MailAccountDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673E876FD9B08BBE3D4A4CFB /* MailAccountDiscovery.swift */; };
@@ -132,6 +134,8 @@
 		0A4CE6FBEACD352CE3B60B16 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		0DCF7F15AB766ED0469A2C13 /* IMAPMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMAPMonitor.swift; sourceTree = "<group>"; };
 		0F8C8090B622F071C9A22736 /* SuspiciousTLDCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspiciousTLDCheckTests.swift; sourceTree = "<group>"; };
+		C6D7E8F901234A5B6C7D8E9F /* BrandImpersonationCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandImpersonationCheck.swift; sourceTree = "<group>"; };
+		D7E8F9A0B1C2D3E4F5061728 /* BrandImpersonationCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandImpersonationCheckTests.swift; sourceTree = "<group>"; };
 		12E09963C3B2706281053AF5 /* PhishingCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhishingCheck.swift; sourceTree = "<group>"; };
 		193CA349DCC1639706F092B3 /* ReturnPathCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReturnPathCheck.swift; sourceTree = "<group>"; };
 		1950191AF1C96D4B206BAA80 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -322,6 +326,7 @@
 			children = (
 				FEBE6FFCC665DF9D085C50E9 /* AuthHeaderCheck.swift */,
 				5EC29B4FFCFF240932E40153 /* BlacklistCheck.swift */,
+				C6D7E8F901234A5B6C7D8E9F /* BrandImpersonationCheck.swift */,
 				536AE1C4CE8C5F5B80AA5CB6 /* IPURLCheck.swift */,
 				E1E91D376C520E3681C4B330 /* LinkMismatchCheck.swift */,
 				E08D56E1E055D9B91B12D5A3 /* PhishingAnalyzer.swift */,
@@ -337,6 +342,7 @@
 			children = (
 				77FB26D5EF04F4ABFAFBBF42 /* AuthHeaderCheckTests.swift */,
 				2F475677A58B37DF98F97755 /* BlacklistCheckTests.swift */,
+				D7E8F9A0B1C2D3E4F5061728 /* BrandImpersonationCheckTests.swift */,
 				6631AB915FE1472A7617D3EA /* BlacklistUpdaterTests.swift */,
 				60DE7A310BC1018D974490B0 /* IPURLCheckTests.swift */,
 				B7446D1FB0AEA1EE6916FDDF /* LinkMismatchCheckTests.swift */,
@@ -575,6 +581,7 @@
 				B2C3D4E5F6A7B8C9D0E1F2A3 /* TrustedLinkDomainStore.swift in Sources */,
 				67952EBD2C418AB68D3E60E4 /* AuthHeaderCheck.swift in Sources */,
 				791106863B5CFC6F86AFCB36 /* BlacklistCheck.swift in Sources */,
+				A3B7C1D2E4F5061728394A5B /* BrandImpersonationCheck.swift in Sources */,
 				7D6223D9FCE35C8B0EFEF1FE /* BlacklistStore.swift in Sources */,
 				CCDE9F2BF94DE5044215690F /* BlacklistUpdater.swift in Sources */,
 				BF7C9B3664948BEFBEF6515E /* DatabaseManager.swift in Sources */,
@@ -597,6 +604,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3FBD7DE0188B10E387A3DFCD /* AuthHeaderCheckTests.swift in Sources */,
+				B4C8D2E3F5A6172839405B6C /* BrandImpersonationCheckTests.swift in Sources */,
 				C61AF2A4F9C2B9FDC2A2C00F /* BlacklistCheckTests.swift in Sources */,
 				974091F2891BB82354B96679 /* BlacklistUpdaterTests.swift in Sources */,
 				8F22E4EF8B7CFC9910DA0725 /* IPURLCheckTests.swift in Sources */,

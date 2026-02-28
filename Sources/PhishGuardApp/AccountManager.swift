@@ -59,8 +59,7 @@ struct MonitoredAccount: Identifiable {
         switch provider {
         case .gmail: return .google
         case .outlook: return .microsoft
-        case .yahoo: return .yahoo
-        case .icloud, .custom: return nil
+        case .icloud, .yahoo, .custom: return nil
         }
     }
 

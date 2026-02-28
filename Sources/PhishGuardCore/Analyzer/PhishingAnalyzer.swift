@@ -28,6 +28,7 @@ public final class PhishingAnalyzer: @unchecked Sendable {
             LinkMismatchCheck(trustedLinkDomainStore: trustedLinkDomainStore),
             IPURLCheck(),
             SuspiciousTLDCheck(),
+            BrandImpersonationCheck(),
         ]
         self.init(checks: checks, allowlistStore: allowlistStore)
     }

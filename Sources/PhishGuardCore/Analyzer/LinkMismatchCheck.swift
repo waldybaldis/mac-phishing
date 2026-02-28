@@ -44,6 +44,8 @@ public struct LinkMismatchCheck: PhishingCheck {
         "mimecast.com", "mimecastprotect.com",
         // Webwin (Belgian newsletter/hosting platform)
         "webwin.be",
+        // DPD / Geopost Pickup Services
+        "pickup-services.com", "email-messaging.com",
     ]
 
     public let name = "Link Text vs URL Mismatch Check"
