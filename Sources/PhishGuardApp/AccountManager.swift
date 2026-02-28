@@ -46,18 +46,29 @@ struct MonitoredAccount: Identifiable {
             return .gmail
         } else if server.contains("outlook") || server.contains("office365") || server.contains("hotmail") {
             return .outlook
+        } else if server.contains("yahoo") || server.contains("ymail") {
+            return .yahoo
         } else if server.contains("icloud") || server.contains("mail.me.com") || server.contains("mac.com") {
             return .icloud
         }
         return .custom
     }
 
+    /// Maps the mail provider to the corresponding OAuth config provider.
+    var oauthProvider: OAuthConfig.Provider? {
+        switch provider {
+        case .gmail: return .google
+        case .outlook: return .microsoft
+        case .yahoo: return .yahoo
+        case .icloud, .custom: return nil
+        }
+    }
+
     /// Whether this account uses OAuth2 for authentication.
     /// Only true if the provider supports OAuth AND a real client ID is configured.
     var usesOAuth: Bool {
-        guard provider.authMethod == .oauth2 else { return false }
-        let oauthProvider: OAuthConfig.Provider = provider == .gmail ? .google : .microsoft
-        return OAuthConfig.isConfigured(for: oauthProvider)
+        guard provider.authMethod == .oauth2, let oauthProv = oauthProvider else { return false }
+        return OAuthConfig.isConfigured(for: oauthProv)
     }
 }
 
@@ -155,7 +166,7 @@ final class AccountManager: ObservableObject {
         guard let index = accounts.firstIndex(where: { $0.id == accountId }) else { return }
 
         let account = accounts[index]
-        let oauthProvider: OAuthConfig.Provider = account.provider == .gmail ? .google : .microsoft
+        let oauthProvider = account.oauthProvider!
 
         do {
             let tokens = try await oauthManager.authenticate(provider: oauthProvider)
@@ -226,7 +237,7 @@ final class AccountManager: ObservableObject {
                 logger.error("Benchmark: no OAuth refresh token for \(accountId)")
                 return
             }
-            let oauthProvider: OAuthConfig.Provider = account.provider == .gmail ? .google : .microsoft
+            let oauthProvider = account.oauthProvider!
             do {
                 let tokens = try await oauthManager.refreshAccessToken(provider: oauthProvider, refreshToken: refreshToken)
                 KeychainHelper.saveTokens(
@@ -293,7 +304,7 @@ final class AccountManager: ObservableObject {
                 try? verdictStore.delete(messageId: verdict.messageId)
                 return
             }
-            let oauthProvider: OAuthConfig.Provider = account.provider == .gmail ? .google : .microsoft
+            let oauthProvider = account.oauthProvider!
             do {
                 let tokens = try await oauthManager.refreshAccessToken(provider: oauthProvider, refreshToken: refreshToken)
                 KeychainHelper.saveTokens(
@@ -375,7 +386,7 @@ final class AccountManager: ObservableObject {
             // Try to load and refresh OAuth tokens
             guard let refreshToken = KeychainHelper.loadRefreshToken(accountId: accountId) else { return }
 
-            let oauthProvider: OAuthConfig.Provider = account.provider == .gmail ? .google : .microsoft
+            let oauthProvider = account.oauthProvider!
 
             accounts[index].status = .connecting
             do {

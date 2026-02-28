@@ -38,6 +38,14 @@
 				<string>msauth.com.phishguard.app</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Yahoo OAuth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.phishguard.app.yahoo</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

@@ -56,6 +56,11 @@ final class OAuthManager: NSObject, ObservableObject {
             params["scope"] = OAuthConfig.scopes(for: provider)
         }
 
+        // Yahoo requires client_secret on refresh
+        if let secret = OAuthConfig.clientSecret(for: provider) {
+            params["client_secret"] = secret
+        }
+
         return try await postTokenRequest(url: tokenURL, params: params)
     }
 
@@ -143,13 +148,18 @@ final class OAuthManager: NSObject, ObservableObject {
         let clientID = OAuthConfig.clientID(for: provider)
         let redirectURI = OAuthConfig.redirectURI(for: provider)
 
-        let params = [
+        var params = [
             "grant_type": "authorization_code",
             "code": code,
             "client_id": clientID,
             "redirect_uri": redirectURI,
             "code_verifier": codeVerifier,
         ]
+
+        // Yahoo requires client_secret for token exchange
+        if let secret = OAuthConfig.clientSecret(for: provider) {
+            params["client_secret"] = secret
+        }
 
         return try await postTokenRequest(url: tokenURL, params: params)
     }

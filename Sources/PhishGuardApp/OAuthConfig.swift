@@ -6,6 +6,7 @@ enum OAuthConfig {
     enum Provider: String {
         case google
         case microsoft
+        case yahoo
     }
 
     // MARK: - Google
@@ -36,12 +37,27 @@ enum OAuthConfig {
         "\(microsoftRedirectScheme)://auth"
     }
 
+    // MARK: - Yahoo
+
+    /// Register at developer.yahoo.com/apps -> Create an App
+    /// Select "Web Application", add redirect URI, get client ID and secret
+    static let yahooClientID = "YOUR_YAHOO_CLIENT_ID"
+    static let yahooClientSecret = ""
+    static let yahooAuthURL = URL(string: "https://api.login.yahoo.com/oauth2/request_auth")!
+    static let yahooTokenURL = URL(string: "https://api.login.yahoo.com/oauth2/get_token")!
+    static let yahooScopes = "mail-r"
+    static let yahooRedirectScheme = "com.phishguard.app.yahoo"
+    static var yahooRedirectURI: String {
+        "\(yahooRedirectScheme)://oauth2callback"
+    }
+
     // MARK: - Helpers
 
     static func authURL(for provider: Provider) -> URL {
         switch provider {
         case .google: return googleAuthURL
         case .microsoft: return microsoftAuthURL
+        case .yahoo: return yahooAuthURL
         }
     }
 
@@ -49,6 +65,7 @@ enum OAuthConfig {
         switch provider {
         case .google: return googleTokenURL
         case .microsoft: return microsoftTokenURL
+        case .yahoo: return yahooTokenURL
         }
     }
 
@@ -56,6 +73,7 @@ enum OAuthConfig {
         switch provider {
         case .google: return googleClientID
         case .microsoft: return microsoftClientID
+        case .yahoo: return yahooClientID
         }
     }
 
@@ -63,6 +81,7 @@ enum OAuthConfig {
         switch provider {
         case .google: return googleScopes
         case .microsoft: return microsoftScopes
+        case .yahoo: return yahooScopes
         }
     }
 
@@ -70,6 +89,7 @@ enum OAuthConfig {
         switch provider {
         case .google: return googleRedirectURI
         case .microsoft: return microsoftRedirectURI
+        case .yahoo: return yahooRedirectURI
         }
     }
 
@@ -77,6 +97,17 @@ enum OAuthConfig {
         switch provider {
         case .google: return googleRedirectScheme
         case .microsoft: return microsoftRedirectScheme
+        case .yahoo: return yahooRedirectScheme
+        }
+    }
+
+    /// Client secret (required by Yahoo, not used by Google/Microsoft public clients).
+    static func clientSecret(for provider: Provider) -> String? {
+        switch provider {
+        case .yahoo:
+            return yahooClientSecret.isEmpty ? nil : yahooClientSecret
+        case .google, .microsoft:
+            return nil
         }
     }
 

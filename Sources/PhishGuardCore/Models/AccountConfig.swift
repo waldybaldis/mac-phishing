@@ -40,6 +40,7 @@ public enum MailProvider: String, CaseIterable, Sendable {
     case icloud = "iCloud"
     case outlook = "Outlook"
     case gmail = "Gmail"
+    case yahoo = "Yahoo"
     case custom = "Custom"
 
     public var defaultServer: String {
@@ -47,6 +48,7 @@ public enum MailProvider: String, CaseIterable, Sendable {
         case .icloud: return "imap.mail.me.com"
         case .outlook: return "outlook.office365.com"
         case .gmail: return "imap.gmail.com"
+        case .yahoo: return "imap.mail.yahoo.com"
         case .custom: return ""
         }
     }
@@ -56,7 +58,7 @@ public enum MailProvider: String, CaseIterable, Sendable {
     /// The authentication method appropriate for this provider.
     public var authMethod: AuthMethod {
         switch self {
-        case .gmail, .outlook: return .oauth2
+        case .gmail, .outlook, .yahoo: return .oauth2
         case .icloud, .custom: return .password
         }
     }

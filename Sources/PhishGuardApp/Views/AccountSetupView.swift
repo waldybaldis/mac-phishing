@@ -188,47 +188,44 @@ struct AccountRowView: View {
     @ViewBuilder
     private var oauthActivationView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if account.provider == .gmail {
-                Button {
-                    onActivateOAuth()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "globe")
-                            .font(.caption)
-                        Text("Sign in with Google")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(6)
+            Button {
+                onActivateOAuth()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "globe")
+                        .font(.caption)
+                    Text(oauthButtonLabel)
+                        .font(.caption)
+                        .fontWeight(.medium)
                 }
-                .buttonStyle(.plain)
-            } else {
-                Button {
-                    onActivateOAuth()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "globe")
-                            .font(.caption)
-                        Text("Sign in with Microsoft")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-                    .background(Color(nsColor: .controlAccentColor))
-                    .foregroundColor(.white)
-                    .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(oauthButtonColor)
+                .foregroundColor(.white)
+                .cornerRadius(6)
             }
+            .buttonStyle(.plain)
 
             Text("Opens your browser to sign in securely")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var oauthButtonLabel: String {
+        switch account.provider {
+        case .gmail: return "Sign in with Google"
+        case .outlook: return "Sign in with Microsoft"
+        case .yahoo: return "Sign in with Yahoo"
+        default: return "Sign in"
+        }
+    }
+
+    private var oauthButtonColor: Color {
+        switch account.provider {
+        case .gmail: return .blue
+        case .yahoo: return Color(red: 0.44, green: 0.11, blue: 0.68) // Yahoo purple
+        default: return Color(nsColor: .controlAccentColor)
         }
     }
 
@@ -251,6 +248,10 @@ struct AccountRowView: View {
                 .foregroundStyle(.secondary)
         case .outlook:
             Text("Generate an app password at account.microsoft.com/security")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        case .yahoo:
+            Text("Generate an app password at login.yahoo.com/account/security")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         case .custom:
