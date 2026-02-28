@@ -16,6 +16,7 @@ public final class DatabaseManager: @unchecked Sendable {
     static let verdictFrom = SQLite.Expression<String>("sender")
     static let verdictSubject = SQLite.Expression<String>("subject")
     static let verdictReceivedDate = SQLite.Expression<Double>("received_date")
+    static let verdictImapUID = SQLite.Expression<Int?>("imap_uid")
 
     static let blacklist = Table("blacklist")
     static let blacklistDomain = SQLite.Expression<String>("domain")
@@ -26,6 +27,10 @@ public final class DatabaseManager: @unchecked Sendable {
     static let allowlistDomain = SQLite.Expression<String>("domain")
     static let allowlistAddedByUser = SQLite.Expression<Bool>("added_by_user")
     static let allowlistTimestamp = SQLite.Expression<Double>("timestamp")
+
+    static let trustedLinkDomains = Table("trusted_link_domains")
+    static let trustedLinkDomain = SQLite.Expression<String>("domain")
+    static let trustedLinkTimestamp = SQLite.Expression<Double>("timestamp")
 
     public init(databasePath: String? = nil) throws {
         let path = databasePath ?? Self.defaultDatabasePath()
@@ -69,6 +74,7 @@ public final class DatabaseManager: @unchecked Sendable {
             t.column(Self.verdictFrom, defaultValue: "")
             t.column(Self.verdictSubject, defaultValue: "")
             t.column(Self.verdictReceivedDate, defaultValue: 0)
+            t.column(Self.verdictImapUID)
         })
 
         // Migration: add new columns to existing databases
@@ -83,6 +89,9 @@ public final class DatabaseManager: @unchecked Sendable {
         if !existingColumns.contains("received_date") {
             try connection.run(Self.verdicts.addColumn(Self.verdictReceivedDate, defaultValue: 0))
         }
+        if !existingColumns.contains("imap_uid") {
+            try connection.run(Self.verdicts.addColumn(Self.verdictImapUID))
+        }
 
         try connection.run(Self.blacklist.create(ifNotExists: true) { t in
             t.column(Self.blacklistDomain, primaryKey: true)
@@ -94,6 +103,11 @@ public final class DatabaseManager: @unchecked Sendable {
             t.column(Self.allowlistDomain, primaryKey: true)
             t.column(Self.allowlistAddedByUser)
             t.column(Self.allowlistTimestamp)
+        })
+
+        try connection.run(Self.trustedLinkDomains.create(ifNotExists: true) { t in
+            t.column(Self.trustedLinkDomain, primaryKey: true)
+            t.column(Self.trustedLinkTimestamp)
         })
 
         try connection.run(Self.verdicts.createIndex(Self.verdictTimestamp, ifNotExists: true))

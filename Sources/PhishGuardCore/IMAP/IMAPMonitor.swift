@@ -162,7 +162,7 @@ public final class IMAPMonitor: @unchecked Sendable {
                 headers: headers
             )
 
-            processNewEmail(email)
+            processNewEmail(email, imapUID: messageInfo.uid?.value)
         } catch {
             delegate?.imapMonitor(self, didEncounterError: error)
         }
@@ -234,8 +234,8 @@ public final class IMAPMonitor: @unchecked Sendable {
     }
 
     /// Processes a new email: analyze it and store the verdict.
-    public func processNewEmail(_ email: ParsedEmail) {
-        let verdict = analyzer.analyze(email: email)
+    public func processNewEmail(_ email: ParsedEmail, imapUID: UInt32? = nil) {
+        let verdict = analyzer.analyze(email: email, imapUID: imapUID)
         try? verdictStore.save(verdict)
         delegate?.imapMonitor(self, didReceiveEmail: email)
     }
@@ -262,6 +262,26 @@ public final class IMAPMonitor: @unchecked Sendable {
         let uidValue = UID(uid)
         let uidSet = MessageIdentifierSet<UID>(uidValue)
         try await server.moveToTrash(messages: uidSet)
+    }
+
+    /// Creates a temporary IMAP connection, deletes the email, and disconnects.
+    public func connectAndDelete(uid: UInt32, credential: IMAPCredential) async throws {
+        let tempServer = IMAPServer(host: account.imapServer, port: account.imapPort)
+        try await tempServer.connect()
+        switch credential {
+        case .password(let password):
+            try await tempServer.login(username: account.username, password: password)
+        case .oauth2(let email, let accessToken):
+            try await tempServer.authenticateXOAUTH2(email: email, accessToken: accessToken)
+        }
+        try await tempServer.selectMailbox("INBOX")
+
+        let uidValue = UID(uid)
+        let uidSet = MessageIdentifierSet<UID>(uidValue)
+        try await tempServer.moveToTrash(messages: uidSet)
+
+        try? await tempServer.logout()
+        try? await tempServer.disconnect()
     }
 
     // MARK: - Benchmark
@@ -305,7 +325,7 @@ public final class IMAPMonitor: @unchecked Sendable {
             )
         }
 
-        let fetchCount = min(count, messageCount)
+        let fetchCount = count > 0 ? min(count, messageCount) : messageCount
         let startSeq = max(1, messageCount - fetchCount + 1)
         let seqRange = SequenceNumber(UInt32(startSeq))...SequenceNumber(UInt32(messageCount))
         let seqSet = MessageIdentifierSet<SequenceNumber>(seqRange)
@@ -380,17 +400,18 @@ public final class IMAPMonitor: @unchecked Sendable {
 
                     // Fetch HTML first (primary need for link analysis)
                     if let part = htmlPart {
-                        if let data = try? await worker.fetchPart(section: part.section, of: identifier),
-                           let decoded = String(data: data, encoding: .utf8) {
-                            html = decoded
+                        if let rawData = try? await worker.fetchPart(section: part.section, of: identifier) {
+                            // Decode content-transfer-encoding (quoted-printable, base64)
+                            let decoded = rawData.decoded(for: part)
+                            html = String(data: decoded, encoding: .utf8)
                         }
                     }
 
                     // Only fetch text/plain if no HTML available (fallback for IP URL check)
                     if html == nil, let part = textPart {
-                        if let data = try? await worker.fetchPart(section: part.section, of: identifier),
-                           let decoded = String(data: data, encoding: .utf8) {
-                            text = decoded
+                        if let rawData = try? await worker.fetchPart(section: part.section, of: identifier) {
+                            let decoded = rawData.decoded(for: part)
+                            text = String(data: decoded, encoding: .utf8)
                         }
                     } else if textPart != nil {
                         skipped += 1  // count skipped text/plain
@@ -490,7 +511,7 @@ public final class IMAPMonitor: @unchecked Sendable {
                 headers: headers
             )
 
-            let verdict = analyzer.analyze(email: email)
+            let verdict = analyzer.analyze(email: email, imapUID: info.uid?.value)
             verdicts.append(verdict)
         }
         let p4Time = CFAbsoluteTimeGetCurrent() - p4Start

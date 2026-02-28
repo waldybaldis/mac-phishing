@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		07E580BEBB75F04D6C0225E1 /* AllowlistStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E67A48886054C75E5526C57 /* AllowlistStore.swift */; };
+		B2C3D4E5F6A7B8C9D0E1F2A3 /* TrustedLinkDomainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* TrustedLinkDomainStore.swift */; };
 		0BD63526451B829030760634 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 84C5BB9AD6FAA879D1B1132F /* SQLite */; };
 		0CE1CD25D4A2068F0F13BBCB /* MailAccountDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673E876FD9B08BBE3D4A4CFB /* MailAccountDiscovery.swift */; };
 		0D27A3093340B8FF82A2B6A8 /* IMAPMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DCF7F15AB766ED0469A2C13 /* IMAPMonitor.swift */; };
@@ -151,6 +152,7 @@
 		68AE78A6F5DE3E2F0A6CCC04 /* PhishGuard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhishGuard.entitlements; sourceTree = "<group>"; };
 		68D45E277D638BB811389DE9 /* BlacklistUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlacklistUpdater.swift; sourceTree = "<group>"; };
 		6E67A48886054C75E5526C57 /* AllowlistStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllowlistStore.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* TrustedLinkDomainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrustedLinkDomainStore.swift; sourceTree = "<group>"; };
 		761E0D0C89D06CE906B0E9A9 /* ParsedEmailTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParsedEmailTests.swift; sourceTree = "<group>"; };
 		77FB26D5EF04F4ABFAFBBF42 /* AuthHeaderCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHeaderCheckTests.swift; sourceTree = "<group>"; };
 		788FE202A6CFF73080126853 /* ParsedEmail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParsedEmail.swift; sourceTree = "<group>"; };
@@ -258,6 +260,7 @@
 				6E67A48886054C75E5526C57 /* AllowlistStore.swift */,
 				AD6426AAF11A11EBEA1B6269 /* BlacklistStore.swift */,
 				D007504B256CDBC56A799369 /* DatabaseManager.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* TrustedLinkDomainStore.swift */,
 				F77592879218CC41BE8EDB20 /* VerdictStore.swift */,
 			);
 			path = Storage;
@@ -569,6 +572,7 @@
 			files = (
 				9C0CD753B279D5FF364F903E /* AccountConfig.swift in Sources */,
 				07E580BEBB75F04D6C0225E1 /* AllowlistStore.swift in Sources */,
+				B2C3D4E5F6A7B8C9D0E1F2A3 /* TrustedLinkDomainStore.swift in Sources */,
 				67952EBD2C418AB68D3E60E4 /* AuthHeaderCheck.swift in Sources */,
 				791106863B5CFC6F86AFCB36 /* BlacklistCheck.swift in Sources */,
 				7D6223D9FCE35C8B0EFEF1FE /* BlacklistStore.swift in Sources */,

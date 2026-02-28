@@ -34,13 +34,13 @@ struct MenuBarView: View {
             // Content
             switch selectedTab {
             case 0:
-                AlertsListView(verdictStore: accountManager.verdictStore)
+                AlertsListView(accountManager: accountManager)
             case 1:
                 AccountSetupView(accountManager: accountManager)
             case 2:
                 SettingsView(accountManager: accountManager)
             default:
-                AlertsListView(verdictStore: accountManager.verdictStore)
+                AlertsListView(accountManager: accountManager)
             }
 
             Divider()

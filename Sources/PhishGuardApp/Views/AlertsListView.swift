@@ -3,7 +3,7 @@ import PhishGuardCore
 
 /// Displays recent phishing alerts from the verdict database.
 struct AlertsListView: View {
-    let verdictStore: VerdictStore
+    let accountManager: AccountManager
     @State private var verdicts: [Verdict] = []
     @State private var selectedId: String?
 
@@ -43,24 +43,52 @@ struct AlertsListView: View {
 
     private func refresh() {
         do {
-            verdicts = try verdictStore.recentVerdicts(limit: 50, minimumScore: 3)
+            verdicts = try accountManager.verdictStore.recentVerdicts(limit: 50, minimumScore: 3)
         } catch {
             verdicts = []
         }
     }
 
     private func deleteVerdict(_ verdict: Verdict) {
-        try? verdictStore.delete(messageId: verdict.messageId)
+        withAnimation {
+            verdicts.removeAll { $0.messageId == verdict.messageId }
+        }
+        Task {
+            await accountManager.deleteFromIMAP(verdict: verdict)
+        }
+    }
+
+    private func markSafe(_ verdict: Verdict) {
+        // Add sender domain to allowlist so future emails from this sender skip analysis
+        let senderDomain = ParsedEmail.extractDomain(from: verdict.from) ?? ""
+        if !senderDomain.isEmpty {
+            try? accountManager.allowlistStore.add(domain: senderDomain)
+        }
+
+        // Extract href domains from link mismatch reasons and add to trusted link domains
+        for reason in verdict.reasons where reason.checkName == "Link Text vs URL Mismatch Check" {
+            if let hrefDomain = extractHrefDomain(from: reason.reason) {
+                try? accountManager.trustedLinkDomainStore.add(domain: hrefDomain)
+            }
+        }
+
+        try? accountManager.verdictStore.updateAction(messageId: verdict.messageId, action: .markedSafe)
         withAnimation {
             verdicts.removeAll { $0.messageId == verdict.messageId }
         }
     }
 
-    private func markSafe(_ verdict: Verdict) {
-        try? verdictStore.updateAction(messageId: verdict.messageId, action: .markedSafe)
-        withAnimation {
-            verdicts.removeAll { $0.messageId == verdict.messageId }
-        }
+    /// Extracts the href domain from a link mismatch reason string.
+    /// Expected format: `Link displays "X" but actually points to "Y"`
+    private func extractHrefDomain(from reason: String) -> String? {
+        guard let range = reason.range(of: "points to \"") else { return nil }
+        let after = reason[range.upperBound...]
+        guard let endQuote = after.firstIndex(of: "\"") else { return nil }
+        let domain = String(after[after.startIndex..<endQuote])
+        // Extract base domain (take last 2 parts)
+        let parts = domain.split(separator: ".").map(String.init)
+        guard parts.count >= 2 else { return nil }
+        return parts.suffix(2).joined(separator: ".")
     }
 }
 

@@ -24,7 +24,8 @@ public final class VerdictStore: @unchecked Sendable {
                 DatabaseManager.verdictActionTaken <- verdict.actionTaken?.rawValue,
                 DatabaseManager.verdictFrom <- verdict.from,
                 DatabaseManager.verdictSubject <- verdict.subject,
-                DatabaseManager.verdictReceivedDate <- verdict.receivedDate.timeIntervalSince1970
+                DatabaseManager.verdictReceivedDate <- verdict.receivedDate.timeIntervalSince1970,
+                DatabaseManager.verdictImapUID <- verdict.imapUID.map { Int($0) }
             )
         )
     }
@@ -37,9 +38,11 @@ public final class VerdictStore: @unchecked Sendable {
     }
 
     /// Returns recent verdicts ordered by timestamp (most recent first).
+    /// Excludes verdicts that have been acted on (marked safe, deleted, etc.).
     public func recentVerdicts(limit: Int = 20, minimumScore: Int = 3) throws -> [Verdict] {
         let query = DatabaseManager.verdicts
             .filter(DatabaseManager.verdictScore >= minimumScore)
+            .filter(DatabaseManager.verdictActionTaken == nil)
             .order(DatabaseManager.verdictTimestamp.desc)
             .limit(limit)
 
@@ -88,7 +91,8 @@ public final class VerdictStore: @unchecked Sendable {
             actionTaken: action,
             from: row[DatabaseManager.verdictFrom],
             subject: row[DatabaseManager.verdictSubject],
-            receivedDate: receivedTs > 0 ? Date(timeIntervalSince1970: receivedTs) : Date(timeIntervalSince1970: row[DatabaseManager.verdictTimestamp])
+            receivedDate: receivedTs > 0 ? Date(timeIntervalSince1970: receivedTs) : Date(timeIntervalSince1970: row[DatabaseManager.verdictTimestamp]),
+            imapUID: row[DatabaseManager.verdictImapUID].map { UInt32($0) }
         )
     }
 }

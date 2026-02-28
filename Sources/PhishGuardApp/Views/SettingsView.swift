@@ -3,6 +3,7 @@ import SwiftUI
 /// Settings view for adjusting PhishGuard behavior.
 struct SettingsView: View {
     var accountManager: AccountManager?
+    @State private var scanCount: Int = 100
     @State private var sensitivityThreshold: Double = 3.0
     @State private var movePhishingToJunk = true
     @State private var showNotifications = true
@@ -109,56 +110,48 @@ struct SettingsView: View {
                 if accountManager != nil {
                     Divider()
 
-                    // Test detection
+                    // Scan Mailbox
                     Group {
-                        Text("Test Detection")
+                        Text("Scan Mailbox")
                             .font(.headline)
 
-                        Text("Inject a fake phishing email to verify the detection pipeline works end-to-end.")
+                        Text("Fetch and analyze existing emails from your inbox for phishing threats.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
-                        Button("Send Test Phishing Alert") {
-                            accountManager?.injectTestPhishingEmail()
+                        Picker("Emails to scan", selection: $scanCount) {
+                            Text("Last 100").tag(100)
+                            Text("Last 250").tag(250)
+                            Text("Last 500").tag(500)
+                            Text("Last 1000").tag(1000)
+                            Text("All").tag(0)
                         }
-                        .buttonStyle(.bordered)
-                    }
+                        .pickerStyle(.segmented)
 
-                    Divider()
-
-                    // Benchmark
-                    Group {
-                        Text("Benchmark")
-                            .font(.headline)
-
-                        Text("Fetch and analyze the last 100 emails to measure scan performance.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        if let result = accountManager?.benchmarkResult {
+                        if let result = accountManager?.scanResult {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("\(result.emailCount) emails in \(String(format: "%.1f", result.totalTime))s")
+                                Text("\(result.emailCount) emails scanned in \(String(format: "%.1f", result.totalTime))s")
                                     .font(.caption)
                                     .fontWeight(.medium)
-                                Text("Avg \(String(format: "%.3f", result.totalTime / max(Double(result.emailCount), 1)))s/email · \(result.skippedParts) attachment parts skipped")
+                                Text("Avg \(String(format: "%.3f", result.totalTime / max(Double(result.emailCount), 1)))s/email")
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
                         }
 
                         HStack {
-                            Button("Run Benchmark") {
+                            Button("Scan") {
                                 guard let mgr = accountManager,
                                       let active = mgr.accounts.first(where: { $0.isActivated }) else { return }
                                 Task {
-                                    await mgr.runBenchmark(accountId: active.id)
+                                    await mgr.scanMailbox(accountId: active.id, count: scanCount)
                                 }
                             }
                             .buttonStyle(.bordered)
-                            .disabled(accountManager?.benchmarkRunning == true
+                            .disabled(accountManager?.scanRunning == true
                                       || accountManager?.accounts.contains(where: \.isActivated) != true)
 
-                            if accountManager?.benchmarkRunning == true {
+                            if accountManager?.scanRunning == true {
                                 ProgressView()
                                     .controlSize(.small)
                                 Text("Scanning…")

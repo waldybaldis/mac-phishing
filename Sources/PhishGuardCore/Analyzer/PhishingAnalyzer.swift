@@ -19,12 +19,13 @@ public final class PhishingAnalyzer: @unchecked Sendable {
     /// - Parameters:
     ///   - blacklistStore: The blacklist store for domain lookups.
     ///   - allowlistStore: Optional allowlist store for trusted domains.
-    public convenience init(blacklistStore: BlacklistStore, allowlistStore: AllowlistStore? = nil) {
+    ///   - trustedLinkDomainStore: Optional store for user-trusted link domains.
+    public convenience init(blacklistStore: BlacklistStore, allowlistStore: AllowlistStore? = nil, trustedLinkDomainStore: TrustedLinkDomainStore? = nil) {
         let checks: [PhishingCheck] = [
             AuthHeaderCheck(),
             ReturnPathCheck(),
             BlacklistCheck(blacklistStore: blacklistStore),
-            LinkMismatchCheck(),
+            LinkMismatchCheck(trustedLinkDomainStore: trustedLinkDomainStore),
             IPURLCheck(),
             SuspiciousTLDCheck(),
         ]
@@ -32,7 +33,7 @@ public final class PhishingAnalyzer: @unchecked Sendable {
     }
 
     /// Analyzes an email and produces a verdict.
-    public func analyze(email: ParsedEmail) -> Verdict {
+    public func analyze(email: ParsedEmail, imapUID: UInt32? = nil) -> Verdict {
         // Check allowlist first — skip analysis for trusted sender domains
         if let allowlist = allowlistStore {
             if let isAllowed = try? allowlist.isAllowed(domain: email.fromDomain), isAllowed {
@@ -43,7 +44,8 @@ public final class PhishingAnalyzer: @unchecked Sendable {
                     actionTaken: Optional<ActionType>.none,
                     from: email.from,
                     subject: email.subject,
-                    receivedDate: email.receivedDate
+                    receivedDate: email.receivedDate,
+                    imapUID: imapUID
                 )
             }
         }
@@ -67,7 +69,8 @@ public final class PhishingAnalyzer: @unchecked Sendable {
             reasons: allResults,
             from: email.from,
             subject: email.subject,
-            receivedDate: email.receivedDate
+            receivedDate: email.receivedDate,
+            imapUID: imapUID
         )
     }
 }

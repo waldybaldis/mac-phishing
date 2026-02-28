@@ -73,6 +73,8 @@ final class AccountManager: ObservableObject {
     private var monitors: [String: IMAPMonitor] = [:]
     private let analyzer: PhishingAnalyzer
     let verdictStore: VerdictStore
+    let allowlistStore: AllowlistStore
+    let trustedLinkDomainStore: TrustedLinkDomainStore
     private let dbManager: DatabaseManager?
 
     private static let activatedAccountsKey = "activatedAccounts"
@@ -82,14 +84,21 @@ final class AccountManager: ObservableObject {
         self.dbManager = db
         if let db = db {
             let blacklistStore = BlacklistStore(database: db)
+            let allowlistStore = AllowlistStore(database: db)
+            let trustedLinkDomainStore = TrustedLinkDomainStore(database: db)
             self.verdictStore = VerdictStore(database: db)
-            self.analyzer = PhishingAnalyzer(blacklistStore: blacklistStore)
+            self.allowlistStore = allowlistStore
+            self.trustedLinkDomainStore = trustedLinkDomainStore
+            self.analyzer = PhishingAnalyzer(blacklistStore: blacklistStore, allowlistStore: allowlistStore, trustedLinkDomainStore: trustedLinkDomainStore)
         } else {
-            self.verdictStore = VerdictStore(database: try! DatabaseManager(databasePath: ":memory:"))
+            let memDb = try! DatabaseManager(databasePath: ":memory:")
+            self.verdictStore = VerdictStore(database: memDb)
+            self.allowlistStore = AllowlistStore(database: memDb)
+            self.trustedLinkDomainStore = TrustedLinkDomainStore(database: memDb)
             self.analyzer = PhishingAnalyzer(checks: [
                 AuthHeaderCheck(),
                 ReturnPathCheck(),
-                LinkMismatchCheck(),
+                LinkMismatchCheck(trustedLinkDomainStore: self.trustedLinkDomainStore),
                 IPURLCheck(),
                 SuspiciousTLDCheck(),
             ])
@@ -196,45 +205,15 @@ final class AccountManager: ObservableObject {
         accounts.contains { $0.status == .monitoring }
     }
 
-    /// Injects a fake phishing email into the analysis pipeline for testing.
-    func injectTestPhishingEmail() {
-        let testEmail = ParsedEmail(
-            messageId: "test-\(UUID().uuidString)@fedrex.com",
-            from: "FedEx Support <tracking-update@fedrex.xyz>",
-            returnPath: "bounce@mail-server.suspicious-domain.ru",
-            authenticationResults: "spf=fail; dkim=fail; dmarc=fail",
-            subject: "URGENT: Your package is held - verify your address now!",
-            htmlBody: """
-            <html><body>
-            <p>Dear Customer,</p>
-            <p>Your package #38291 is waiting. Please <a href="http://192.168.1.100/track">click here to verify</a> your delivery address.</p>
-            <p>Or visit <a href="http://fedrex.xyz/verify">FedEx tracking</a> to update your information.</p>
-            <p>Act within 24 hours or your package will be returned!</p>
-            </body></html>
-            """,
-            textBody: "Your package is held. Click http://192.168.1.100/track to verify.",
-            receivedDate: Date(),
-            headers: [
-                "From": "FedEx Support <tracking-update@fedrex.xyz>",
-                "Return-Path": "<bounce@mail-server.suspicious-domain.ru>",
-                "Authentication-Results": "spf=fail; dkim=fail; dmarc=fail",
-            ]
-        )
+    // MARK: - Scan Mailbox
 
-        let verdict = analyzer.analyze(email: testEmail)
-        try? verdictStore.save(verdict)
-        logger.info("Injected test phishing email — score: \(verdict.score), reasons: \(verdict.reasons.count)")
-    }
+    @Published var scanRunning = false
+    @Published var scanResult: IMAPMonitor.BenchmarkResult?
 
-    // MARK: - Benchmark
-
-    @Published var benchmarkRunning = false
-    @Published var benchmarkResult: IMAPMonitor.BenchmarkResult?
-
-    /// Runs a benchmark scan on the given account, fetching and analyzing 100 emails.
-    func runBenchmark(accountId: String) async {
+    /// Scans the last `count` emails (or all if 0) from the given account's mailbox.
+    func scanMailbox(accountId: String, count: Int) async {
         guard let index = accounts.firstIndex(where: { $0.id == accountId }) else {
-            logger.error("Benchmark: account \(accountId) not found")
+            logger.error("Scan: account \(accountId) not found")
             return
         }
 
@@ -279,18 +258,82 @@ final class AccountManager: ObservableObject {
 
         let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore)
 
-        benchmarkRunning = true
-        benchmarkResult = nil
+        scanRunning = true
+        scanResult = nil
 
         do {
-            let result = try await monitor.benchmarkScan(count: 100, credential: credential)
-            benchmarkResult = result
-            logger.info("Benchmark complete: \(result.emailCount) emails in \(String(format: "%.2f", result.totalTime))s")
+            let result = try await monitor.benchmarkScan(count: count, credential: credential)
+            scanResult = result
+            logger.info("Scan complete: \(result.emailCount) emails in \(String(format: "%.2f", result.totalTime))s")
         } catch {
-            logger.error("Benchmark failed: \(error.localizedDescription)")
+            logger.error("Scan failed: \(error.localizedDescription)")
         }
 
-        benchmarkRunning = false
+        scanRunning = false
+    }
+
+    /// Deletes an email from the IMAP server using the stored UID.
+    func deleteFromIMAP(verdict: Verdict) async {
+        guard let uid = verdict.imapUID else {
+            logger.warning("No IMAP UID for verdict \(verdict.messageId) — removing locally only")
+            try? verdictStore.delete(messageId: verdict.messageId)
+            return
+        }
+
+        // Find the activated account to create a monitor for deletion
+        guard let account = accounts.first(where: { $0.isActivated }) else {
+            logger.error("No activated account to delete email from")
+            try? verdictStore.delete(messageId: verdict.messageId)
+            return
+        }
+
+        let credential: IMAPCredential
+        if account.usesOAuth {
+            guard let refreshToken = KeychainHelper.loadRefreshToken(accountId: account.id) else {
+                try? verdictStore.delete(messageId: verdict.messageId)
+                return
+            }
+            let oauthProvider: OAuthConfig.Provider = account.provider == .gmail ? .google : .microsoft
+            do {
+                let tokens = try await oauthManager.refreshAccessToken(provider: oauthProvider, refreshToken: refreshToken)
+                KeychainHelper.saveTokens(
+                    accountId: account.id,
+                    accessToken: tokens.accessToken,
+                    refreshToken: tokens.refreshToken ?? refreshToken
+                )
+                credential = .oauth2(email: account.discovered.email, accessToken: tokens.accessToken)
+            } catch {
+                logger.error("Delete: token refresh failed: \(error.localizedDescription)")
+                try? verdictStore.delete(messageId: verdict.messageId)
+                return
+            }
+        } else {
+            guard let password = KeychainHelper.loadPassword(accountId: account.id) else {
+                try? verdictStore.delete(messageId: verdict.messageId)
+                return
+            }
+            credential = .password(password)
+        }
+
+        let config = AccountConfig(
+            displayName: account.discovered.name,
+            imapServer: account.discovered.server,
+            imapPort: account.discovered.port,
+            username: account.discovered.email,
+            useTLS: account.discovered.usesSSL,
+            authMethod: account.usesOAuth ? .oauth2 : .password
+        )
+
+        let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore)
+
+        do {
+            try await monitor.connectAndDelete(uid: uid, credential: credential)
+            logger.info("Deleted email UID \(uid) from IMAP")
+        } catch {
+            logger.error("IMAP delete failed: \(error.localizedDescription)")
+        }
+
+        try? verdictStore.delete(messageId: verdict.messageId)
     }
 
     // MARK: - Private

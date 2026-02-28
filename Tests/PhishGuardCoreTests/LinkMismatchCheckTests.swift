@@ -79,6 +79,17 @@ final class LinkMismatchCheckTests: XCTestCase {
         XCTAssertTrue(results.isEmpty, "Subdomains of the same base domain should not trigger")
     }
 
+    func testDifferentTLDShouldFlag() {
+        let html = """
+        <html><body>
+        <a href="https://mailing.ing.com/track">https://ing.be/account</a>
+        </body></html>
+        """
+        let email = makeEmail(html: html)
+        let results = check.analyze(email: email, context: .from(email: email))
+        XCTAssertEqual(results.count, 1, "Different TLDs should flag even if brand name matches")
+    }
+
     // MARK: - Helpers
 
     private func makeEmail(html: String) -> ParsedEmail {
