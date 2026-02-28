@@ -11,7 +11,7 @@ final class LinkMismatchCheckTests: XCTestCase {
         </body></html>
         """
         let email = makeEmail(html: html)
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].points, 4)
         XCTAssert(results[0].reason.contains("paypal.com"))
@@ -25,7 +25,7 @@ final class LinkMismatchCheckTests: XCTestCase {
         </body></html>
         """
         let email = makeEmail(html: html)
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertTrue(results.isEmpty)
     }
 
@@ -36,7 +36,7 @@ final class LinkMismatchCheckTests: XCTestCase {
         </body></html>
         """
         let email = makeEmail(html: html)
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertTrue(results.isEmpty, "Non-URL display text should not trigger the check")
     }
 
@@ -48,7 +48,7 @@ final class LinkMismatchCheckTests: XCTestCase {
         </body></html>
         """
         let email = makeEmail(html: html)
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertEqual(results.count, 2)
         XCTAssertEqual(results.reduce(0) { $0 + $1.points }, 8) // 4 + 4
     }
@@ -64,7 +64,7 @@ final class LinkMismatchCheckTests: XCTestCase {
             textBody: "Plain text only",
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertTrue(results.isEmpty)
     }
 
@@ -75,7 +75,7 @@ final class LinkMismatchCheckTests: XCTestCase {
         </body></html>
         """
         let email = makeEmail(html: html)
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertTrue(results.isEmpty, "Subdomains of the same base domain should not trigger")
     }
 

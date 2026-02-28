@@ -1,5 +1,4 @@
 import Foundation
-import SwiftSoup
 
 /// Check #4: Detects links where the display text shows a different domain than the actual href.
 /// Adds +4 points per mismatched link.
@@ -8,27 +7,15 @@ public struct LinkMismatchCheck: PhishingCheck {
 
     public init() {}
 
-    public func analyze(email: ParsedEmail) -> [CheckResult] {
-        guard let htmlBody = email.htmlBody, !htmlBody.isEmpty else {
-            return []
-        }
-
+    public func analyze(email: ParsedEmail, context: AnalysisContext) -> [CheckResult] {
         var results: [CheckResult] = []
 
-        guard let doc = try? SwiftSoup.parse(htmlBody),
-              let links = try? doc.select("a[href]") else {
-            return []
-        }
-
-        for link in links {
-            guard let href = try? link.attr("href"),
-                  let displayText = try? link.text() else { continue }
-
+        for link in context.links {
             // Only check links where display text looks like a URL
-            guard looksLikeURL(displayText) else { continue }
+            guard looksLikeURL(link.displayText) else { continue }
 
-            let hrefDomain = extractDomainFromURL(href)
-            let displayDomain = extractDomainFromURL(displayText)
+            let hrefDomain = extractDomainFromURL(link.href)
+            let displayDomain = extractDomainFromURL(link.displayText)
 
             guard let hDomain = hrefDomain, let dDomain = displayDomain else { continue }
 

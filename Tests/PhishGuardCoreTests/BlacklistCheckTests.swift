@@ -33,7 +33,7 @@ final class BlacklistCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].points, 5)
         XCTAssert(results[0].reason.contains("evil-phishing.com"))
@@ -56,7 +56,7 @@ final class BlacklistCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].points, 5)
         XCTAssert(results[0].reason.contains("fake-bank.net"))
@@ -74,7 +74,7 @@ final class BlacklistCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertTrue(results.isEmpty)
     }
 
@@ -96,7 +96,7 @@ final class BlacklistCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertEqual(results.count, 3) // sender + 2 link domains
         XCTAssertEqual(results.reduce(0) { $0 + $1.points }, 15) // 5 + 5 + 5
     }

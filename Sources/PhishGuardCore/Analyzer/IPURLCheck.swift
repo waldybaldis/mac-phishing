@@ -1,5 +1,4 @@
 import Foundation
-import SwiftSoup
 
 /// Check #5: Detects URLs containing raw IP addresses instead of domain names.
 /// Adds +4 points per IP-based URL found.
@@ -13,23 +12,27 @@ public struct IPURLCheck: PhishingCheck {
 
     public init() {}
 
-    public func analyze(email: ParsedEmail) -> [CheckResult] {
+    public func analyze(email: ParsedEmail, context: AnalysisContext) -> [CheckResult] {
         var results: [CheckResult] = []
 
-        // Check HTML body links
-        if let htmlBody = email.htmlBody {
-            let ipURLs = findIPURLsInHTML(htmlBody)
-            for url in ipURLs {
-                results.append(CheckResult(
-                    checkName: name,
-                    points: 4,
-                    reason: "Link uses raw IP address: \(url)"
-                ))
+        // Check HTML link hrefs from pre-parsed context
+        var foundIPURLs = Set<String>()
+        for link in context.links {
+            if containsIPURL(link.href) {
+                foundIPURLs.insert(truncateURL(link.href))
             }
         }
 
-        // Also check plain text body
-        if let textBody = email.textBody, results.isEmpty {
+        for url in foundIPURLs {
+            results.append(CheckResult(
+                checkName: name,
+                points: 4,
+                reason: "Link uses raw IP address: \(url)"
+            ))
+        }
+
+        // Also check plain text body if no HTML links matched
+        if results.isEmpty, let textBody = email.textBody {
             let ipURLs = findIPURLsInText(textBody)
             for url in ipURLs {
                 results.append(CheckResult(
@@ -41,25 +44,6 @@ public struct IPURLCheck: PhishingCheck {
         }
 
         return results
-    }
-
-    /// Extracts IP-based URLs from HTML link href attributes.
-    private func findIPURLsInHTML(_ html: String) -> Set<String> {
-        var ipURLs = Set<String>()
-
-        guard let doc = try? SwiftSoup.parse(html),
-              let links = try? doc.select("a[href]") else {
-            return ipURLs
-        }
-
-        for link in links {
-            guard let href = try? link.attr("href") else { continue }
-            if containsIPURL(href) {
-                ipURLs.insert(truncateURL(href))
-            }
-        }
-
-        return ipURLs
     }
 
     /// Finds IP-based URLs in plain text.

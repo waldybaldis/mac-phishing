@@ -123,6 +123,50 @@ struct SettingsView: View {
                         }
                         .buttonStyle(.bordered)
                     }
+
+                    Divider()
+
+                    // Benchmark
+                    Group {
+                        Text("Benchmark")
+                            .font(.headline)
+
+                        Text("Fetch and analyze the last 100 emails to measure scan performance.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        if let result = accountManager?.benchmarkResult {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(result.emailCount) emails in \(String(format: "%.1f", result.totalTime))s")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                Text("Avg \(String(format: "%.3f", result.totalTime / max(Double(result.emailCount), 1)))s/email · \(result.skippedParts) attachment parts skipped")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        HStack {
+                            Button("Run Benchmark") {
+                                guard let mgr = accountManager,
+                                      let active = mgr.accounts.first(where: { $0.isActivated }) else { return }
+                                Task {
+                                    await mgr.runBenchmark(accountId: active.id)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(accountManager?.benchmarkRunning == true
+                                      || accountManager?.accounts.contains(where: \.isActivated) != true)
+
+                            if accountManager?.benchmarkRunning == true {
+                                ProgressView()
+                                    .controlSize(.small)
+                                Text("Scanning…")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
                 }
             }
             .padding()

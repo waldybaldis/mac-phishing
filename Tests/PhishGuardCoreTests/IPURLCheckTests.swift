@@ -11,7 +11,7 @@ final class IPURLCheckTests: XCTestCase {
         </body></html>
         """
         let email = makeEmail(html: html)
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].points, 4)
         XCTAssert(results[0].reason.contains("192.168.1.1"))
@@ -25,7 +25,7 @@ final class IPURLCheckTests: XCTestCase {
         </body></html>
         """
         let email = makeEmail(html: html)
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertEqual(results.count, 2)
     }
 
@@ -36,7 +36,7 @@ final class IPURLCheckTests: XCTestCase {
         </body></html>
         """
         let email = makeEmail(html: html)
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertTrue(results.isEmpty)
     }
 
@@ -51,7 +51,7 @@ final class IPURLCheckTests: XCTestCase {
             textBody: "Visit http://192.168.1.100/reset to reset your password",
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].points, 4)
     }
@@ -67,7 +67,7 @@ final class IPURLCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertTrue(results.isEmpty)
     }
 

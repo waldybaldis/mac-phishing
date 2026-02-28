@@ -15,7 +15,7 @@ final class SuspiciousTLDCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].points, 2)
         XCTAssert(results[0].reason.contains(".xyz"))
@@ -38,7 +38,7 @@ final class SuspiciousTLDCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].points, 2)
         XCTAssert(results[0].reason.contains(".tk"))
@@ -63,7 +63,7 @@ final class SuspiciousTLDCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertTrue(results.isEmpty)
     }
 
@@ -84,7 +84,7 @@ final class SuspiciousTLDCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .from(email: email))
         XCTAssertEqual(results.count, 3) // sender + 2 links
         XCTAssertEqual(results.reduce(0) { $0 + $1.points }, 6) // 2 + 2 + 2
     }

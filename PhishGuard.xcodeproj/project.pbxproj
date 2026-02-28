@@ -521,7 +521,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C3DBDC8B34BBE678803E8B95 /* XCRemoteSwiftPackageReference "SQLite.swift" */,
-				A5886DD6721155471A76C76F /* XCRemoteSwiftPackageReference "SwiftMail" */,
+				A5886DD6721155471A76C76F /* XCLocalSwiftPackageReference "LocalPackages/SwiftMail" */,
 				506DC5CBBF74F7D0B48C4611 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -959,13 +959,9 @@
 				minimumVersion = 2.7.0;
 			};
 		};
-		A5886DD6721155471A76C76F /* XCRemoteSwiftPackageReference "SwiftMail" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Cocoanetics/SwiftMail.git";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
+		A5886DD6721155471A76C76F /* XCLocalSwiftPackageReference "LocalPackages/SwiftMail" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/SwiftMail;
 		};
 		C3DBDC8B34BBE678803E8B95 /* XCRemoteSwiftPackageReference "SQLite.swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -990,7 +986,7 @@
 		};
 		A96D7A135001A7DDF294DEE9 /* SwiftMail */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A5886DD6721155471A76C76F /* XCRemoteSwiftPackageReference "SwiftMail" */;
+			package = A5886DD6721155471A76C76F /* XCLocalSwiftPackageReference "LocalPackages/SwiftMail" */;
 			productName = SwiftMail;
 		};
 		EB0DA4A853705FB92810DC92 /* SwiftSoup */ = {

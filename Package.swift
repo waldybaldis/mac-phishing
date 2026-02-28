@@ -15,7 +15,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.7.0"),
         .package(url: "https://github.com/stephencelis/SQLite.swift.git", from: "0.15.0"),
-        .package(url: "https://github.com/Cocoanetics/SwiftMail.git", branch: "main"),
+        .package(path: "LocalPackages/SwiftMail"),
     ],
     targets: [
         .target(

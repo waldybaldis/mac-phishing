@@ -7,7 +7,7 @@ public struct ReturnPathCheck: PhishingCheck {
 
     public init() {}
 
-    public func analyze(email: ParsedEmail) -> [CheckResult] {
+    public func analyze(email: ParsedEmail, context: AnalysisContext) -> [CheckResult] {
         guard let returnPathDomain = email.returnPathDomain, !returnPathDomain.isEmpty else {
             return []
         }

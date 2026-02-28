@@ -40,15 +40,21 @@ public final class PhishingAnalyzer: @unchecked Sendable {
                     messageId: email.messageId,
                     score: 0,
                     reasons: [],
-                    actionTaken: Optional<ActionType>.none
+                    actionTaken: Optional<ActionType>.none,
+                    from: email.from,
+                    subject: email.subject,
+                    receivedDate: email.receivedDate
                 )
             }
         }
 
+        // Parse HTML once and share across all checks
+        let context = AnalysisContext.from(email: email)
+
         // Run all checks
         var allResults: [CheckResult] = []
         for check in checks {
-            let results = check.analyze(email: email)
+            let results = check.analyze(email: email, context: context)
             allResults.append(contentsOf: results)
         }
 
@@ -58,7 +64,10 @@ public final class PhishingAnalyzer: @unchecked Sendable {
         return Verdict(
             messageId: email.messageId,
             score: totalScore,
-            reasons: allResults
+            reasons: allResults,
+            from: email.from,
+            subject: email.subject,
+            receivedDate: email.receivedDate
         )
     }
 }

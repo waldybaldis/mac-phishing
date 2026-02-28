@@ -21,7 +21,10 @@ public final class VerdictStore: @unchecked Sendable {
                 DatabaseManager.verdictScore <- verdict.score,
                 DatabaseManager.verdictReasons <- reasonsJSON,
                 DatabaseManager.verdictTimestamp <- verdict.timestamp.timeIntervalSince1970,
-                DatabaseManager.verdictActionTaken <- verdict.actionTaken?.rawValue
+                DatabaseManager.verdictActionTaken <- verdict.actionTaken?.rawValue,
+                DatabaseManager.verdictFrom <- verdict.from,
+                DatabaseManager.verdictSubject <- verdict.subject,
+                DatabaseManager.verdictReceivedDate <- verdict.receivedDate.timeIntervalSince1970
             )
         )
     }
@@ -61,6 +64,12 @@ public final class VerdictStore: @unchecked Sendable {
 
     // MARK: - Private
 
+    /// Deletes a verdict by message ID.
+    public func delete(messageId: String) throws {
+        let target = DatabaseManager.verdicts.filter(DatabaseManager.verdictMessageId == messageId)
+        try db.connection.run(target.delete())
+    }
+
     private func verdictFromRow(_ row: Row) throws -> Verdict {
         let decoder = JSONDecoder()
         let reasonsJSON = row[DatabaseManager.verdictReasons]
@@ -69,12 +78,17 @@ public final class VerdictStore: @unchecked Sendable {
         let actionStr = row[DatabaseManager.verdictActionTaken]
         let action = actionStr.flatMap { ActionType(rawValue: $0) }
 
+        let receivedTs = row[DatabaseManager.verdictReceivedDate]
+
         return Verdict(
             messageId: row[DatabaseManager.verdictMessageId],
             score: row[DatabaseManager.verdictScore],
             reasons: reasons,
             timestamp: Date(timeIntervalSince1970: row[DatabaseManager.verdictTimestamp]),
-            actionTaken: action
+            actionTaken: action,
+            from: row[DatabaseManager.verdictFrom],
+            subject: row[DatabaseManager.verdictSubject],
+            receivedDate: receivedTs > 0 ? Date(timeIntervalSince1970: receivedTs) : Date(timeIntervalSince1970: row[DatabaseManager.verdictTimestamp])
         )
     }
 }

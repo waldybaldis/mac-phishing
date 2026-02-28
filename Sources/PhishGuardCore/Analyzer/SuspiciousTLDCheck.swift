@@ -1,5 +1,4 @@
 import Foundation
-import SwiftSoup
 
 /// Check #6: Flags emails with sender or link domains using suspicious TLDs.
 /// Adds +2 points per suspicious TLD found.
@@ -16,7 +15,7 @@ public struct SuspiciousTLDCheck: PhishingCheck {
 
     public init() {}
 
-    public func analyze(email: ParsedEmail) -> [CheckResult] {
+    public func analyze(email: ParsedEmail, context: AnalysisContext) -> [CheckResult] {
         var results: [CheckResult] = []
         var checkedDomains = Set<String>()
 
@@ -28,17 +27,13 @@ public struct SuspiciousTLDCheck: PhishingCheck {
             checkedDomains.insert(email.fromDomain.lowercased())
         }
 
-        // Check link domains from HTML body
-        if let htmlBody = email.htmlBody {
-            let linkDomains = extractLinkDomains(from: htmlBody)
-            for domain in linkDomains {
-                let normalized = domain.lowercased()
-                guard !checkedDomains.contains(normalized) else { continue }
-                checkedDomains.insert(normalized)
+        // Check link domains from pre-parsed context
+        for domain in context.linkDomains {
+            guard !checkedDomains.contains(domain) else { continue }
+            checkedDomains.insert(domain)
 
-                if let result = checkDomain(domain, context: "link") {
-                    results.append(result)
-                }
+            if let result = checkDomain(domain, context: "link") {
+                results.append(result)
             }
         }
 
@@ -60,22 +55,5 @@ public struct SuspiciousTLDCheck: PhishingCheck {
     private func extractTLD(from domain: String) -> String {
         let parts = domain.lowercased().split(separator: ".")
         return parts.last.map(String.init) ?? ""
-    }
-
-    /// Extracts all unique domains from href attributes in HTML content.
-    private func extractLinkDomains(from html: String) -> Set<String> {
-        var domains = Set<String>()
-
-        guard let doc = try? SwiftSoup.parse(html),
-              let links = try? doc.select("a[href]") else { return domains }
-
-        for link in links {
-            guard let href = try? link.attr("href"),
-                  let url = URL(string: href),
-                  let host = url.host else { continue }
-            domains.insert(host.lowercased())
-        }
-
-        return domains
     }
 }

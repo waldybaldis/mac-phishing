@@ -15,7 +15,7 @@ final class ReturnPathCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .empty)
         XCTAssertTrue(results.isEmpty)
     }
 
@@ -30,7 +30,7 @@ final class ReturnPathCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .empty)
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].points, 3)
         XCTAssert(results[0].reason.contains("evil-site.com"))
@@ -48,7 +48,7 @@ final class ReturnPathCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .empty)
         XCTAssertTrue(results.isEmpty, "Subdomains of the same base domain should not trigger")
     }
 
@@ -63,7 +63,7 @@ final class ReturnPathCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .empty)
         XCTAssertTrue(results.isEmpty)
     }
 
@@ -78,7 +78,7 @@ final class ReturnPathCheckTests: XCTestCase {
             textBody: nil,
             receivedDate: Date()
         )
-        let results = check.analyze(email: email)
+        let results = check.analyze(email: email, context: .empty)
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].points, 3)
     }

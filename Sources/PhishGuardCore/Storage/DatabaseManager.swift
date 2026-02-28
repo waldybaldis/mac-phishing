@@ -13,6 +13,9 @@ public final class DatabaseManager: @unchecked Sendable {
     static let verdictReasons = SQLite.Expression<String>("reasons")  // JSON
     static let verdictTimestamp = SQLite.Expression<Double>("timestamp")
     static let verdictActionTaken = SQLite.Expression<String?>("action_taken")
+    static let verdictFrom = SQLite.Expression<String>("sender")
+    static let verdictSubject = SQLite.Expression<String>("subject")
+    static let verdictReceivedDate = SQLite.Expression<Double>("received_date")
 
     static let blacklist = Table("blacklist")
     static let blacklistDomain = SQLite.Expression<String>("domain")
@@ -63,7 +66,23 @@ public final class DatabaseManager: @unchecked Sendable {
             t.column(Self.verdictReasons)
             t.column(Self.verdictTimestamp)
             t.column(Self.verdictActionTaken)
+            t.column(Self.verdictFrom, defaultValue: "")
+            t.column(Self.verdictSubject, defaultValue: "")
+            t.column(Self.verdictReceivedDate, defaultValue: 0)
         })
+
+        // Migration: add new columns to existing databases
+        let tableInfo = try connection.prepare("PRAGMA table_info(verdicts)")
+        let existingColumns = Set(tableInfo.map { $0[1] as! String })
+        if !existingColumns.contains("sender") {
+            try connection.run(Self.verdicts.addColumn(Self.verdictFrom, defaultValue: ""))
+        }
+        if !existingColumns.contains("subject") {
+            try connection.run(Self.verdicts.addColumn(Self.verdictSubject, defaultValue: ""))
+        }
+        if !existingColumns.contains("received_date") {
+            try connection.run(Self.verdicts.addColumn(Self.verdictReceivedDate, defaultValue: 0))
+        }
 
         try connection.run(Self.blacklist.create(ifNotExists: true) { t in
             t.column(Self.blacklistDomain, primaryKey: true)

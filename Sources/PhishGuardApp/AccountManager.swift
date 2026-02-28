@@ -226,6 +226,73 @@ final class AccountManager: ObservableObject {
         logger.info("Injected test phishing email — score: \(verdict.score), reasons: \(verdict.reasons.count)")
     }
 
+    // MARK: - Benchmark
+
+    @Published var benchmarkRunning = false
+    @Published var benchmarkResult: IMAPMonitor.BenchmarkResult?
+
+    /// Runs a benchmark scan on the given account, fetching and analyzing 100 emails.
+    func runBenchmark(accountId: String) async {
+        guard let index = accounts.firstIndex(where: { $0.id == accountId }) else {
+            logger.error("Benchmark: account \(accountId) not found")
+            return
+        }
+
+        let account = accounts[index]
+
+        // Resolve credential from Keychain
+        let credential: IMAPCredential
+        if account.usesOAuth {
+            guard let refreshToken = KeychainHelper.loadRefreshToken(accountId: accountId) else {
+                logger.error("Benchmark: no OAuth refresh token for \(accountId)")
+                return
+            }
+            let oauthProvider: OAuthConfig.Provider = account.provider == .gmail ? .google : .microsoft
+            do {
+                let tokens = try await oauthManager.refreshAccessToken(provider: oauthProvider, refreshToken: refreshToken)
+                KeychainHelper.saveTokens(
+                    accountId: accountId,
+                    accessToken: tokens.accessToken,
+                    refreshToken: tokens.refreshToken ?? refreshToken
+                )
+                credential = .oauth2(email: account.discovered.email, accessToken: tokens.accessToken)
+            } catch {
+                logger.error("Benchmark: token refresh failed: \(error.localizedDescription)")
+                return
+            }
+        } else {
+            guard let password = KeychainHelper.loadPassword(accountId: accountId) else {
+                logger.error("Benchmark: no password for \(accountId)")
+                return
+            }
+            credential = .password(password)
+        }
+
+        let config = AccountConfig(
+            displayName: account.discovered.name,
+            imapServer: account.discovered.server,
+            imapPort: account.discovered.port,
+            username: account.discovered.email,
+            useTLS: account.discovered.usesSSL,
+            authMethod: account.usesOAuth ? .oauth2 : .password
+        )
+
+        let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore)
+
+        benchmarkRunning = true
+        benchmarkResult = nil
+
+        do {
+            let result = try await monitor.benchmarkScan(count: 100, credential: credential)
+            benchmarkResult = result
+            logger.info("Benchmark complete: \(result.emailCount) emails in \(String(format: "%.2f", result.totalTime))s")
+        } catch {
+            logger.error("Benchmark failed: \(error.localizedDescription)")
+        }
+
+        benchmarkRunning = false
+    }
+
     // MARK: - Private
 
     private func startMonitor(accountId: String, credential: IMAPCredential) async {

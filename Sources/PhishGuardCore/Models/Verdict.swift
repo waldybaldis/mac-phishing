@@ -8,8 +8,35 @@ public struct Verdict: Sendable, Codable {
     public let timestamp: Date
     public var actionTaken: ActionType?
 
+    // Email metadata for display
+    public let from: String
+    public let subject: String
+    public let receivedDate: Date
+
     public var threatLevel: ThreatLevel {
         ThreatLevel(score: score)
+    }
+
+    /// Display name extracted from the From header (e.g. "FedEx Support" from "FedEx Support <foo@bar>").
+    public var senderName: String {
+        let trimmed = from.trimmingCharacters(in: .whitespaces)
+        if let angleBracket = trimmed.firstIndex(of: "<") {
+            let name = trimmed[trimmed.startIndex..<angleBracket].trimmingCharacters(in: .whitespaces)
+            // Strip surrounding quotes
+            let unquoted = name.trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            return unquoted.isEmpty ? senderEmail : unquoted
+        }
+        return trimmed
+    }
+
+    /// Email address extracted from the From header.
+    public var senderEmail: String {
+        let trimmed = from.trimmingCharacters(in: .whitespaces)
+        if let start = trimmed.firstIndex(of: "<"),
+           let end = trimmed.firstIndex(of: ">") {
+            return String(trimmed[trimmed.index(after: start)..<end])
+        }
+        return trimmed
     }
 
     public init(
@@ -17,13 +44,19 @@ public struct Verdict: Sendable, Codable {
         score: Int,
         reasons: [CheckResult],
         timestamp: Date = Date(),
-        actionTaken: ActionType? = nil
+        actionTaken: ActionType? = nil,
+        from: String = "",
+        subject: String = "",
+        receivedDate: Date = Date()
     ) {
         self.messageId = messageId
         self.score = score
         self.reasons = reasons
         self.timestamp = timestamp
         self.actionTaken = actionTaken
+        self.from = from
+        self.subject = subject
+        self.receivedDate = receivedDate
     }
 }
 

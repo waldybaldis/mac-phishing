@@ -256,6 +256,286 @@ public final class IMAPMonitor: @unchecked Sendable {
         try await server.store(flags: [.flagged], on: uidSet, operation: .add)
     }
 
+    /// Moves a message to Trash via IMAP.
+    public func deleteEmail(uid: UInt32) async throws {
+        guard let server = self.server else { return }
+        let uidValue = UID(uid)
+        let uidSet = MessageIdentifierSet<UID>(uidValue)
+        try await server.moveToTrash(messages: uidSet)
+    }
+
+    // MARK: - Benchmark
+
+    /// Result of a benchmark scan with timing breakdown.
+    public struct BenchmarkResult: Sendable {
+        public let emailCount: Int
+        public let fetchInfoTime: TimeInterval
+        public let fetchBodiesTime: TimeInterval
+        public let fetchHeadersTime: TimeInterval
+        public let analysisTime: TimeInterval
+        public let storageTime: TimeInterval
+        public let totalTime: TimeInterval
+        public let skippedParts: Int
+    }
+
+    /// Fetches the last `count` emails, runs phishing analysis, and returns timing stats.
+    /// Uses a separate IMAP connection so it doesn't disturb the IDLE monitor.
+    public func benchmarkScan(count: Int, credential: IMAPCredential) async throws -> BenchmarkResult {
+        let benchServer = IMAPServer(host: account.imapServer, port: account.imapPort)
+        let totalStart = CFAbsoluteTimeGetCurrent()
+
+        // Connect & authenticate
+        try await benchServer.connect()
+        switch credential {
+        case .password(let password):
+            try await benchServer.login(username: account.username, password: password)
+        case .oauth2(let email, let accessToken):
+            try await benchServer.authenticateXOAUTH2(email: email, accessToken: accessToken)
+        }
+
+        let selection = try await benchServer.selectMailbox("INBOX")
+        let messageCount = selection.messageCount
+        guard messageCount > 0 else {
+            try? await benchServer.logout()
+            try? await benchServer.disconnect()
+            return BenchmarkResult(
+                emailCount: 0, fetchInfoTime: 0, fetchBodiesTime: 0,
+                fetchHeadersTime: 0, analysisTime: 0, storageTime: 0,
+                totalTime: 0, skippedParts: 0
+            )
+        }
+
+        let fetchCount = min(count, messageCount)
+        let startSeq = max(1, messageCount - fetchCount + 1)
+        let seqRange = SequenceNumber(UInt32(startSeq))...SequenceNumber(UInt32(messageCount))
+        let seqSet = MessageIdentifierSet<SequenceNumber>(seqRange)
+
+        // Phase 1: Bulk fetch message info (envelope + MIME structure)
+        let p1Start = CFAbsoluteTimeGetCurrent()
+        let messageInfos = try await benchServer.fetchMessageInfosBulk(using: seqSet)
+        let p1Time = CFAbsoluteTimeGetCurrent() - p1Start
+
+        logger.info("Benchmark: fetched \(messageInfos.count) message infos in \(String(format: "%.2f", p1Time))s")
+
+        // Create worker connections in parallel for Phases 2 & 3
+        let workerCount = 10
+        let connStart = CFAbsoluteTimeGetCurrent()
+        let workerResults: [IMAPServer?] = await withTaskGroup(of: (Int, IMAPServer?).self) { group in
+            for i in 0..<workerCount {
+                group.addTask {
+                    let worker = IMAPServer(host: self.account.imapServer, port: self.account.imapPort)
+                    do {
+                        try await worker.connect()
+                        switch credential {
+                        case .password(let password):
+                            try await worker.login(username: self.account.username, password: password)
+                        case .oauth2(let email, let accessToken):
+                            try await worker.authenticateXOAUTH2(email: email, accessToken: accessToken)
+                        }
+                        try await worker.selectMailbox("INBOX")
+                        return (i, worker)
+                    } catch {
+                        logger.warning("Benchmark: failed to create worker \(i): \(error.localizedDescription)")
+                        return (i, nil)
+                    }
+                }
+            }
+            var results = Array<IMAPServer?>(repeating: nil, count: workerCount)
+            for await (i, worker) in group {
+                results[i] = worker
+            }
+            return results
+        }
+        var workers: [IMAPServer] = workerResults.compactMap { $0 }
+        let connTime = CFAbsoluteTimeGetCurrent() - connStart
+        logger.info("Benchmark: \(workers.count) worker connections in \(String(format: "%.2f", connTime))s")
+        if workers.isEmpty { workers.append(benchServer) }
+
+        // Phase 2: Fetch text body parts only (skip attachments) — parallel
+        // Optimization: prefer HTML (needed for link analysis); only fetch text/plain
+        // as fallback when no HTML part exists.
+        let p2Start = CFAbsoluteTimeGetCurrent()
+        let p2Results: [(Int, String?, String?, Int)] = await withTaskGroup(of: (Int, String?, String?, Int).self) { group in
+            for (idx, info) in messageInfos.enumerated() {
+                let worker = workers[idx % workers.count]
+                group.addTask {
+                    var html: String?
+                    var text: String?
+                    var skipped = 0
+                    let identifier = info.sequenceNumber
+
+                    // Separate parts by type
+                    var htmlPart: MessagePart?
+                    var textPart: MessagePart?
+                    for part in info.parts {
+                        let ct = part.contentType.lowercased()
+                        if ct.hasPrefix("text/html") && htmlPart == nil {
+                            htmlPart = part
+                        } else if ct.hasPrefix("text/plain") && textPart == nil {
+                            textPart = part
+                        } else {
+                            skipped += 1
+                        }
+                    }
+
+                    // Fetch HTML first (primary need for link analysis)
+                    if let part = htmlPart {
+                        if let data = try? await worker.fetchPart(section: part.section, of: identifier),
+                           let decoded = String(data: data, encoding: .utf8) {
+                            html = decoded
+                        }
+                    }
+
+                    // Only fetch text/plain if no HTML available (fallback for IP URL check)
+                    if html == nil, let part = textPart {
+                        if let data = try? await worker.fetchPart(section: part.section, of: identifier),
+                           let decoded = String(data: data, encoding: .utf8) {
+                            text = decoded
+                        }
+                    } else if textPart != nil {
+                        skipped += 1  // count skipped text/plain
+                    }
+
+                    if info.parts.isEmpty {
+                        let message = try? await worker.fetchMessage(from: info)
+                        html = message?.htmlBody
+                        text = message?.textBody
+                    }
+
+                    return (idx, html, text, skipped)
+                }
+            }
+            var results: [(Int, String?, String?, Int)] = []
+            for await result in group {
+                results.append(result)
+            }
+            return results
+        }
+        var textBodies: [Int: (html: String?, text: String?)] = [:]
+        var skippedParts = 0
+        for (idx, html, text, skipped) in p2Results {
+            textBodies[idx] = (html: html, text: text)
+            skippedParts += skipped
+        }
+        let p2Time = CFAbsoluteTimeGetCurrent() - p2Start
+
+        // Phase 3: Use raw headers from bulk fetch (additionalFields),
+        // only fall back to fetchRawMessage (parallel) for messages missing key headers
+        let p3Start = CFAbsoluteTimeGetCurrent()
+        let p3Results: [(Int, [String: String], Bool)] = await withTaskGroup(of: (Int, [String: String], Bool).self) { group in
+            for (idx, info) in messageInfos.enumerated() {
+                let worker = workers[idx % workers.count]
+                group.addTask {
+                    var headers: [String: String] = info.additionalFields ?? [:]
+                    var didFallback = false
+
+                    // Only fetch raw message if bulk fetch didn't provide key headers
+                    if headers["Authentication-Results"] == nil && headers["Return-Path"] == nil {
+                        if let uid = info.uid {
+                            if let rawData = try? await worker.fetchRawMessage(identifier: uid),
+                               let rawString = String(data: rawData, encoding: .utf8) {
+                                let parsed = Self.parseRawHeaders(rawString)
+                                headers.merge(parsed) { _, new in new }
+                            }
+                            didFallback = true
+                        }
+                    }
+
+                    if headers["From"] == nil, let from = info.from {
+                        headers["From"] = from
+                    }
+                    if headers["Subject"] == nil, let subject = info.subject {
+                        headers["Subject"] = subject
+                    }
+                    return (idx, headers, didFallback)
+                }
+            }
+            var results: [(Int, [String: String], Bool)] = []
+            for await result in group {
+                results.append(result)
+            }
+            return results
+        }
+        var allHeaders: [Int: [String: String]] = [:]
+        var fallbackCount = 0
+        for (idx, headers, didFallback) in p3Results {
+            allHeaders[idx] = headers
+            if didFallback { fallbackCount += 1 }
+        }
+        let p3Time = CFAbsoluteTimeGetCurrent() - p3Start
+
+        // Cleanup worker connections
+        for worker in workers where worker !== benchServer {
+            try? await worker.logout()
+            try? await worker.disconnect()
+        }
+
+        // Phase 4: Build ParsedEmail and run analysis
+        var verdicts: [Verdict] = []
+        let p4Start = CFAbsoluteTimeGetCurrent()
+
+        for (idx, info) in messageInfos.enumerated() {
+            let bodies = textBodies[idx] ?? (html: nil, text: nil)
+            let headers = allHeaders[idx] ?? [:]
+
+            let email = ParsedEmail(
+                messageId: info.messageId ?? UUID().uuidString,
+                from: info.from ?? "",
+                returnPath: headers["Return-Path"],
+                authenticationResults: headers["Authentication-Results"],
+                subject: info.subject ?? "(no subject)",
+                htmlBody: bodies.html,
+                textBody: bodies.text,
+                receivedDate: info.internalDate ?? Date(),
+                headers: headers
+            )
+
+            let verdict = analyzer.analyze(email: email)
+            verdicts.append(verdict)
+        }
+        let p4Time = CFAbsoluteTimeGetCurrent() - p4Start
+
+        // Phase 5: Store verdicts
+        let p5Start = CFAbsoluteTimeGetCurrent()
+        for verdict in verdicts {
+            try? verdictStore.save(verdict)
+        }
+        let p5Time = CFAbsoluteTimeGetCurrent() - p5Start
+
+        // Cleanup
+        try? await benchServer.logout()
+        try? await benchServer.disconnect()
+
+        let totalTime = CFAbsoluteTimeGetCurrent() - totalStart
+        let n = Double(messageInfos.count)
+
+        // Log timing breakdown
+        logger.info("""
+        === PhishGuard Benchmark: \(messageInfos.count) emails ===
+        Worker connections (\(workers.count)):         \(String(format: "%.2f", connTime))s
+        Phase 1 - Fetch message info (bulk):  \(String(format: "%.2f", p1Time))s
+        Phase 2 - Fetch text bodies:          \(String(format: "%.2f", p2Time))s  (avg \(String(format: "%.3f", p2Time / max(n, 1)))s/email)
+        Phase 3 - Fetch raw headers:          \(String(format: "%.2f", p3Time))s  (avg \(String(format: "%.3f", p3Time / max(n, 1)))s/email)
+        Phase 4 - Phishing analysis:          \(String(format: "%.2f", p4Time))s  (avg \(String(format: "%.3f", p4Time / max(n, 1)))s/email)
+        Phase 5 - Verdict storage:            \(String(format: "%.2f", p5Time))s
+        ─────────────────────────────────────
+        Total:                                 \(String(format: "%.2f", totalTime))s  (avg \(String(format: "%.3f", totalTime / max(n, 1)))s/email)
+        Extrapolated for 1000 emails:          ~\(String(format: "%.1f", totalTime / max(n, 1) * 1000))s
+        Emails with attachments skipped:       \(skippedParts) parts skipped
+        """)
+
+        return BenchmarkResult(
+            emailCount: messageInfos.count,
+            fetchInfoTime: p1Time,
+            fetchBodiesTime: p2Time,
+            fetchHeadersTime: p3Time,
+            analysisTime: p4Time,
+            storageTime: p5Time,
+            totalTime: totalTime,
+            skippedParts: skippedParts
+        )
+    }
+
     /// Stops monitoring and disconnects.
     public func stop() {
         monitorTask?.cancel()
