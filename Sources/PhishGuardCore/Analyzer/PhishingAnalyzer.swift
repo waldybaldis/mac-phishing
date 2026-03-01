@@ -21,7 +21,7 @@ public final class PhishingAnalyzer: @unchecked Sendable {
     ///   - allowlistStore: Optional allowlist store for trusted domains.
     ///   - trustedLinkDomainStore: Optional store for user-trusted link domains.
     ///   - campaignStore: Optional Safeonweb campaign store for active phishing campaign detection.
-    public convenience init(blacklistStore: BlacklistStore, allowlistStore: AllowlistStore? = nil, trustedLinkDomainStore: TrustedLinkDomainStore? = nil, campaignStore: SafeonwebCampaignStore? = nil) {
+    public convenience init(blacklistStore: BlacklistStore, allowlistStore: AllowlistStore? = nil, trustedLinkDomainStore: TrustedLinkDomainStore? = nil, campaignStore: SafeonwebCampaignStore? = nil, userBrandStore: UserBrandStore? = nil) {
         let checks: [PhishingCheck] = [
             AuthHeaderCheck(),
             ReturnPathCheck(),
@@ -29,13 +29,13 @@ public final class PhishingAnalyzer: @unchecked Sendable {
             LinkMismatchCheck(trustedLinkDomainStore: trustedLinkDomainStore),
             IPURLCheck(),
             SuspiciousTLDCheck(),
-            BrandImpersonationCheck(campaignStore: campaignStore),
+            BrandImpersonationCheck(campaignStore: campaignStore, userBrandStore: userBrandStore),
         ]
         self.init(checks: checks, allowlistStore: allowlistStore)
     }
 
     /// Analyzes an email and produces a verdict.
-    public func analyze(email: ParsedEmail, imapUID: UInt32? = nil) -> Verdict {
+    public func analyze(email: ParsedEmail, imapUID: UInt32? = nil, accountId: String? = nil) -> Verdict {
         // Check allowlist first — skip analysis for trusted sender domains
         if let allowlist = allowlistStore {
             if let isAllowed = try? allowlist.isAllowed(domain: email.fromDomain), isAllowed {
@@ -47,7 +47,8 @@ public final class PhishingAnalyzer: @unchecked Sendable {
                     from: email.from,
                     subject: email.subject,
                     receivedDate: email.receivedDate,
-                    imapUID: imapUID
+                    imapUID: imapUID,
+                    accountId: accountId
                 )
             }
         }
@@ -72,7 +73,8 @@ public final class PhishingAnalyzer: @unchecked Sendable {
             from: email.from,
             subject: email.subject,
             receivedDate: email.receivedDate,
-            imapUID: imapUID
+            imapUID: imapUID,
+            accountId: accountId
         )
     }
 }

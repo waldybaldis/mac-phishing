@@ -25,7 +25,8 @@ public final class VerdictStore: @unchecked Sendable {
                 DatabaseManager.verdictFrom <- verdict.from,
                 DatabaseManager.verdictSubject <- verdict.subject,
                 DatabaseManager.verdictReceivedDate <- verdict.receivedDate.timeIntervalSince1970,
-                DatabaseManager.verdictImapUID <- verdict.imapUID.map { Int($0) }
+                DatabaseManager.verdictImapUID <- verdict.imapUID.map { Int($0) },
+                DatabaseManager.verdictAccountId <- verdict.accountId
             )
         )
     }
@@ -105,7 +106,8 @@ public final class VerdictStore: @unchecked Sendable {
             from: row[DatabaseManager.verdictFrom],
             subject: row[DatabaseManager.verdictSubject],
             receivedDate: receivedTs > 0 ? Date(timeIntervalSince1970: receivedTs) : Date(timeIntervalSince1970: row[DatabaseManager.verdictTimestamp]),
-            imapUID: row[DatabaseManager.verdictImapUID].map { UInt32($0) }
+            imapUID: row[DatabaseManager.verdictImapUID].map { UInt32($0) },
+            accountId: row[DatabaseManager.verdictAccountId]
         )
     }
 }

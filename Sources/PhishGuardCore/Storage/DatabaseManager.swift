@@ -17,6 +17,7 @@ public final class DatabaseManager: @unchecked Sendable {
     static let verdictSubject = SQLite.Expression<String>("subject")
     static let verdictReceivedDate = SQLite.Expression<Double>("received_date")
     static let verdictImapUID = SQLite.Expression<Int?>("imap_uid")
+    static let verdictAccountId = SQLite.Expression<String?>("account_id")
 
     static let blacklist = Table("blacklist")
     static let blacklistDomain = SQLite.Expression<String>("domain")
@@ -37,6 +38,10 @@ public final class DatabaseManager: @unchecked Sendable {
     static let safeonwebPublishedDate = SQLite.Expression<Double>("published_date")
     static let safeonwebFetchedDate = SQLite.Expression<Double>("fetched_date")
     static let safeonwebArticleTitle = SQLite.Expression<String>("article_title")
+
+    static let userBrands = Table("user_brands")
+    static let userBrand = SQLite.Expression<String>("brand")
+    static let userBrandTimestamp = SQLite.Expression<Double>("timestamp")
 
     public init(databasePath: String? = nil) throws {
         let path = databasePath ?? Self.defaultDatabasePath()
@@ -98,6 +103,9 @@ public final class DatabaseManager: @unchecked Sendable {
         if !existingColumns.contains("imap_uid") {
             try connection.run(Self.verdicts.addColumn(Self.verdictImapUID))
         }
+        if !existingColumns.contains("account_id") {
+            try connection.run(Self.verdicts.addColumn(Self.verdictAccountId))
+        }
 
         try connection.run(Self.blacklist.create(ifNotExists: true) { t in
             t.column(Self.blacklistDomain, primaryKey: true)
@@ -122,6 +130,11 @@ public final class DatabaseManager: @unchecked Sendable {
             t.column(Self.safeonwebFetchedDate)
             t.column(Self.safeonwebArticleTitle)
             t.unique(Self.safeonwebBrand, Self.safeonwebArticleTitle)
+        })
+
+        try connection.run(Self.userBrands.create(ifNotExists: true) { t in
+            t.column(Self.userBrand, primaryKey: true)
+            t.column(Self.userBrandTimestamp)
         })
 
         try connection.run(Self.verdicts.createIndex(Self.verdictTimestamp, ifNotExists: true))

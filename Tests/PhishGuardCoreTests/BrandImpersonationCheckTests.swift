@@ -4,9 +4,10 @@ import XCTest
 final class BrandImpersonationCheckTests: XCTestCase {
     let check = BrandImpersonationCheck()
 
-    // MARK: - Should flag (brand impersonation)
+    // MARK: - Should NOT flag (no brand store match)
 
-    func testBrandNameNotInDomain() {
+    func testUnknownBrandNotFlagged() {
+        // DPD is not in any brand store — should NOT flag
         let email = ParsedEmail(
             messageId: "test-1",
             from: "DPD <john@gmail.com>",
@@ -18,13 +19,11 @@ final class BrandImpersonationCheckTests: XCTestCase {
             receivedDate: Date()
         )
         let results = check.analyze(email: email, context: .empty)
-        XCTAssertEqual(results.count, 1)
-        XCTAssertEqual(results[0].points, 3)
-        XCTAssert(results[0].reason.contains("DPD"))
-        XCTAssert(results[0].reason.contains("gmail.com"))
+        XCTAssertTrue(results.isEmpty, "Unknown brand should not flag without brand store")
     }
 
-    func testBrandWithDescriptorNotInDomain() {
+    func testUnknownBrandOnNonFreemailNotFlagged() {
+        // "PayPal Support" on scammer.net — but paypal is not in any brand store
         let email = ParsedEmail(
             messageId: "test-2",
             from: "PayPal Support <alerts@scammer.net>",
@@ -36,8 +35,47 @@ final class BrandImpersonationCheckTests: XCTestCase {
             receivedDate: Date()
         )
         let results = check.analyze(email: email, context: .empty)
+        XCTAssertTrue(results.isEmpty, "Unknown brand on non-freemail domain should not flag")
+    }
+
+    func testPersonalNameOnGmailNotFlagged() {
+        let email = ParsedEmail(
+            messageId: "test-personal-1",
+            from: "Bruno Woestyn <woestoetoe@gmail.com>",
+            returnPath: nil,
+            authenticationResults: nil,
+            subject: "Hello",
+            htmlBody: nil,
+            textBody: nil,
+            receivedDate: Date()
+        )
+        let results = check.analyze(email: email, context: .empty)
+        XCTAssertTrue(results.isEmpty, "Personal name on gmail should not flag")
+    }
+
+    // MARK: - Should flag (user brand store match)
+
+    func testUserBrandFlagged() throws {
+        let db = try DatabaseManager(inMemory: true)
+        let userBrandStore = UserBrandStore(database: db)
+        try userBrandStore.add(brand: "DPD")
+
+        let checkWithBrands = BrandImpersonationCheck(userBrandStore: userBrandStore)
+
+        let email = ParsedEmail(
+            messageId: "test-user-brand-1",
+            from: "DPD <john@gmail.com>",
+            returnPath: nil,
+            authenticationResults: nil,
+            subject: "Your package",
+            htmlBody: nil,
+            textBody: nil,
+            receivedDate: Date()
+        )
+        let results = checkWithBrands.analyze(email: email, context: .empty)
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].points, 3)
+        XCTAssert(results[0].reason.contains("DPD"))
     }
 
     // MARK: - Should NOT flag (legitimate)
@@ -132,7 +170,7 @@ final class BrandImpersonationCheckTests: XCTestCase {
         XCTAssertTrue(results.isEmpty, "Words under 3 chars should be ignored")
     }
 
-    func testQuotedDisplayName() {
+    func testQuotedDisplayNameNotFlaggedWithoutBrandStore() {
         let email = ParsedEmail(
             messageId: "test-9",
             from: "\"Netflix\" <billing@evil-site.com>",
@@ -144,6 +182,27 @@ final class BrandImpersonationCheckTests: XCTestCase {
             receivedDate: Date()
         )
         let results = check.analyze(email: email, context: .empty)
+        XCTAssertTrue(results.isEmpty, "Netflix not in brand store should not flag")
+    }
+
+    func testQuotedDisplayNameFlaggedWithBrandStore() throws {
+        let db = try DatabaseManager(inMemory: true)
+        let userBrandStore = UserBrandStore(database: db)
+        try userBrandStore.add(brand: "Netflix")
+
+        let checkWithBrands = BrandImpersonationCheck(userBrandStore: userBrandStore)
+
+        let email = ParsedEmail(
+            messageId: "test-9b",
+            from: "\"Netflix\" <billing@evil-site.com>",
+            returnPath: nil,
+            authenticationResults: nil,
+            subject: "Payment failed",
+            htmlBody: nil,
+            textBody: nil,
+            receivedDate: Date()
+        )
+        let results = checkWithBrands.analyze(email: email, context: .empty)
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].points, 3)
     }
@@ -164,10 +223,15 @@ final class BrandImpersonationCheckTests: XCTestCase {
         XCTAssertTrue(results.isEmpty, "DPD in local part 'dpd' should not flag")
     }
 
-    // MARK: - Link domain vs brand
+    // MARK: - Link domain vs brand (with campaign store)
 
-    func testLinksToUnrelatedDomain() {
-        // Argenta phishing: display name "ARGENTA" but links go to tradebulls.in
+    func testLinksToUnrelatedDomain() throws {
+        let db = try DatabaseManager(inMemory: true)
+        let campaignStore = SafeonwebCampaignStore(database: db)
+        try campaignStore.insertBrands(["argenta"], publishedDate: Date(), articleTitle: "Phishing Argenta")
+
+        let checkWithCampaign = BrandImpersonationCheck(campaignStore: campaignStore)
+
         let email = ParsedEmail(
             messageId: "test-11",
             from: "ARGENTA <digipass-new@tradebulls.in>",
@@ -179,14 +243,20 @@ final class BrandImpersonationCheckTests: XCTestCase {
             receivedDate: Date()
         )
         let context = AnalysisContext.from(email: email)
-        let results = check.analyze(email: email, context: context)
-        XCTAssertEqual(results.count, 2)
+        let results = checkWithCampaign.analyze(email: email, context: context)
+        XCTAssertEqual(results.count, 3)
         XCTAssertEqual(results[0].points, 3, "Brand impersonation base score")
         XCTAssertEqual(results[1].points, 2, "No links point to brand domain")
+        XCTAssertEqual(results[2].points, 2, "Safeonweb campaign boost")
     }
 
-    func testLinksPointToBrandDomain() {
-        // Brand impersonation but links DO go to the brand — only base flag, no link flag
+    func testLinksPointToBrandDomain() throws {
+        let db = try DatabaseManager(inMemory: true)
+        let userBrandStore = UserBrandStore(database: db)
+        try userBrandStore.add(brand: "argenta")
+
+        let checkWithBrands = BrandImpersonationCheck(userBrandStore: userBrandStore)
+
         let email = ParsedEmail(
             messageId: "test-12",
             from: "Argenta <noreply@scammer.net>",
@@ -198,13 +268,18 @@ final class BrandImpersonationCheckTests: XCTestCase {
             receivedDate: Date()
         )
         let context = AnalysisContext.from(email: email)
-        let results = check.analyze(email: email, context: context)
+        let results = checkWithBrands.analyze(email: email, context: context)
         XCTAssertEqual(results.count, 1, "Only base impersonation, links contain brand")
         XCTAssertEqual(results[0].points, 3)
     }
 
-    func testNoLinksNoExtraFlag() {
-        // No links in email — only base impersonation flag, no link check
+    func testNoLinksNoExtraFlag() throws {
+        let db = try DatabaseManager(inMemory: true)
+        let userBrandStore = UserBrandStore(database: db)
+        try userBrandStore.add(brand: "paypal")
+
+        let checkWithBrands = BrandImpersonationCheck(userBrandStore: userBrandStore)
+
         let email = ParsedEmail(
             messageId: "test-13",
             from: "PayPal <alerts@scammer.net>",
@@ -216,7 +291,7 @@ final class BrandImpersonationCheckTests: XCTestCase {
             receivedDate: Date()
         )
         let context = AnalysisContext.from(email: email)
-        let results = check.analyze(email: email, context: context)
+        let results = checkWithBrands.analyze(email: email, context: context)
         XCTAssertEqual(results.count, 1, "No links means no link domain check")
         XCTAssertEqual(results[0].points, 3)
     }
@@ -249,7 +324,7 @@ final class BrandImpersonationCheckTests: XCTestCase {
     }
 
     func testNoCampaignStoreNoBoost() {
-        // Default check (no campaign store) should not produce campaign boost
+        // Default check (no campaign store) should not produce any results for unknown brands
         let email = ParsedEmail(
             messageId: "test-campaign-2",
             from: "ARGENTA <digipass-new@tradebulls.in>",
@@ -262,8 +337,6 @@ final class BrandImpersonationCheckTests: XCTestCase {
         )
         let results = check.analyze(email: email, context: .empty)
 
-        XCTAssertEqual(results.count, 1, "Without campaign store, only base impersonation")
-        XCTAssertEqual(results[0].points, 3)
-        XCTAssertFalse(results[0].reason.contains("Safeonweb"))
+        XCTAssertTrue(results.isEmpty, "Without any brand store, unknown brands should not flag")
     }
 }

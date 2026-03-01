@@ -13,6 +13,7 @@ public struct Verdict: Sendable, Codable {
     public let subject: String
     public let receivedDate: Date
     public let imapUID: UInt32?
+    public let accountId: String?
 
     public var threatLevel: ThreatLevel {
         ThreatLevel(score: score)
@@ -49,7 +50,8 @@ public struct Verdict: Sendable, Codable {
         from: String = "",
         subject: String = "",
         receivedDate: Date = Date(),
-        imapUID: UInt32? = nil
+        imapUID: UInt32? = nil,
+        accountId: String? = nil
     ) {
         self.messageId = messageId
         self.score = score
@@ -60,6 +62,7 @@ public struct Verdict: Sendable, Codable {
         self.subject = subject
         self.receivedDate = receivedDate
         self.imapUID = imapUID
+        self.accountId = accountId
     }
 }
 

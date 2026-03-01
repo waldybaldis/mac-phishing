@@ -86,6 +86,7 @@ final class AccountManager: ObservableObject {
     let allowlistStore: AllowlistStore
     let trustedLinkDomainStore: TrustedLinkDomainStore
     let campaignStore: SafeonwebCampaignStore
+    let userBrandStore: UserBrandStore
     let safeonwebUpdater: SafeonwebUpdater
     private let dbManager: DatabaseManager?
 
@@ -99,19 +100,23 @@ final class AccountManager: ObservableObject {
             let allowlistStore = AllowlistStore(database: db)
             let trustedLinkDomainStore = TrustedLinkDomainStore(database: db)
             let campaignStore = SafeonwebCampaignStore(database: db)
+            let userBrandStore = UserBrandStore(database: db)
             self.verdictStore = VerdictStore(database: db)
             self.allowlistStore = allowlistStore
             self.trustedLinkDomainStore = trustedLinkDomainStore
             self.campaignStore = campaignStore
+            self.userBrandStore = userBrandStore
             self.safeonwebUpdater = SafeonwebUpdater(campaignStore: campaignStore)
-            self.analyzer = PhishingAnalyzer(blacklistStore: blacklistStore, allowlistStore: allowlistStore, trustedLinkDomainStore: trustedLinkDomainStore, campaignStore: campaignStore)
+            self.analyzer = PhishingAnalyzer(blacklistStore: blacklistStore, allowlistStore: allowlistStore, trustedLinkDomainStore: trustedLinkDomainStore, campaignStore: campaignStore, userBrandStore: userBrandStore)
         } else {
             let memDb = try! DatabaseManager(databasePath: ":memory:")
             let campaignStore = SafeonwebCampaignStore(database: memDb)
+            let userBrandStore = UserBrandStore(database: memDb)
             self.verdictStore = VerdictStore(database: memDb)
             self.allowlistStore = AllowlistStore(database: memDb)
             self.trustedLinkDomainStore = TrustedLinkDomainStore(database: memDb)
             self.campaignStore = campaignStore
+            self.userBrandStore = userBrandStore
             self.safeonwebUpdater = SafeonwebUpdater(campaignStore: campaignStore)
             self.analyzer = PhishingAnalyzer(checks: [
                 AuthHeaderCheck(),
@@ -119,8 +124,20 @@ final class AccountManager: ObservableObject {
                 LinkMismatchCheck(trustedLinkDomainStore: self.trustedLinkDomainStore),
                 IPURLCheck(),
                 SuspiciousTLDCheck(),
-                BrandImpersonationCheck(campaignStore: campaignStore),
+                BrandImpersonationCheck(campaignStore: campaignStore, userBrandStore: userBrandStore),
             ])
+        }
+
+        // Seed Safeonweb archive brands once
+        if !UserDefaults.standard.bool(forKey: "safeonwebArchiveSeeded") {
+            try? campaignStore.seedArchiveBrands()
+            UserDefaults.standard.set(true, forKey: "safeonwebArchiveSeeded")
+        }
+
+        // One-time cleanup: remove brands incorrectly seeded into user_brands
+        if !UserDefaults.standard.bool(forKey: "userBrandsSeedCleanup") {
+            try? userBrandStore.removeAll()
+            UserDefaults.standard.set(true, forKey: "userBrandsSeedCleanup")
         }
 
         safeonwebUpdater.startPeriodicRefresh()
@@ -260,7 +277,7 @@ final class AccountManager: ObservableObject {
                 authMethod: account.usesOAuth ? .oauth2 : .password
             )
 
-            let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore)
+            let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore, accountId: account.id)
 
             do {
                 let result = try await monitor.benchmarkScan(count: count, credential: credential)
@@ -319,10 +336,11 @@ final class AccountManager: ObservableObject {
             return
         }
 
-        // Find the activated account to create a monitor for deletion
-        guard let account = accounts.first(where: { $0.isActivated }),
+        // Find the account that received this email
+        guard let verdictAccountId = verdict.accountId,
+              let account = accounts.first(where: { $0.id == verdictAccountId && $0.isActivated }),
               let credential = await resolveCredential(for: account) else {
-            logger.error("No activated account or credentials to delete email from")
+            logger.error("No matching account for verdict \(verdict.messageId) (accountId: \(verdict.accountId ?? "nil")) — removing locally only")
             try? verdictStore.delete(messageId: verdict.messageId)
             return
         }
@@ -336,13 +354,13 @@ final class AccountManager: ObservableObject {
             authMethod: account.usesOAuth ? .oauth2 : .password
         )
 
-        let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore)
+        let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore, accountId: account.id)
 
         do {
             try await monitor.connectAndDelete(uid: uid, credential: credential)
-            logger.info("Deleted email UID \(uid) from IMAP")
+            logger.info("Deleted email UID \(uid) from IMAP account \(account.discovered.email)")
         } catch {
-            logger.error("IMAP delete failed: \(error.localizedDescription)")
+            logger.error("IMAP delete failed for \(account.discovered.email): \(error.localizedDescription)")
         }
 
         try? verdictStore.delete(messageId: verdict.messageId)
@@ -363,7 +381,7 @@ final class AccountManager: ObservableObject {
             authMethod: accounts[index].usesOAuth ? .oauth2 : .password
         )
 
-        let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore)
+        let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore, accountId: account.id)
         monitors[accountId] = monitor
 
         do {

@@ -1,15 +1,19 @@
 import Foundation
 
-/// Check #7: Detects when the From display name suggests a brand that doesn't match the sender domain.
-/// For example: `DPD <john@gmail.com>` — display name "DPD" has no relation to "gmail.com".
-/// Adds +3 points when the display name doesn't appear in the sender domain or local part.
+/// Check #7: Detects when the From display name matches a known brand but the sender domain doesn't.
+/// Only flags when the display name word matches a brand from the user's watchlist or an active
+/// Safeonweb campaign — personal names on any domain are not flagged.
+/// Adds +3 points when a known brand is detected in the display name but not in the sender domain.
 /// Adds +2 more points if no link in the email points to the brand's domain either.
+/// Adds +2 more points if the brand has an active Safeonweb phishing campaign.
 public struct BrandImpersonationCheck: PhishingCheck {
     public let name = "Brand Impersonation Check"
     private let campaignStore: SafeonwebCampaignStore?
+    private let userBrandStore: UserBrandStore?
 
-    public init(campaignStore: SafeonwebCampaignStore? = nil) {
+    public init(campaignStore: SafeonwebCampaignStore? = nil, userBrandStore: UserBrandStore? = nil) {
         self.campaignStore = campaignStore
+        self.userBrandStore = userBrandStore
     }
 
     public func analyze(email: ParsedEmail, context: AnalysisContext) -> [CheckResult] {
@@ -27,25 +31,33 @@ public struct BrandImpersonationCheck: PhishingCheck {
         let domain = email.fromDomain.lowercased()
         let localPart = extractLocalPart(from: email.from)?.lowercased() ?? ""
 
-        // Check if any display name word appears in the domain
+        // Check if any display name word appears in the domain — consistent, no impersonation
         for word in words {
             if domain.contains(word) {
-                return [] // Brand name is in the domain — consistent
+                return []
             }
         }
 
-        // Check if any display name word appears in the local part.
-        // This avoids false positives for personal emails:
-        // "John Smith <john.smith@gmail.com>" — "john" is in "john.smith", it's their name.
+        // Check if any display name word appears in the local part — personal email
         for word in words {
             if localPart.contains(word) {
-                return [] // Name matches the local part — personal email, not impersonation
+                return []
             }
         }
+
+        // Only flag if at least one word matches a known brand
+        let matchedBrand = words.first { word in
+            let isUserBrand = (try? userBrandStore?.isWatched(word)) ?? false
+            let isCampaignBrand = (try? campaignStore?.isActiveCampaignBrand(word)) ?? false
+            return isUserBrand || isCampaignBrand
+        }
+
+        guard let brand = matchedBrand else { return [] }
+        _ = brand // brand identified — proceed with flagging
 
         var results: [CheckResult] = []
 
-        // Display name doesn't match domain or local part — potential brand impersonation
+        // Known brand in display name doesn't match domain — brand impersonation
         results.append(CheckResult(
             checkName: name,
             points: 3,
@@ -53,7 +65,6 @@ public struct BrandImpersonationCheck: PhishingCheck {
         ))
 
         // Check if any link in the email points to a domain containing the brand name.
-        // If not, the email claims to be from a brand but doesn't even link to it — highly suspicious.
         if !context.linkDomains.isEmpty {
             let brandInLinks = context.linkDomains.contains { linkDomain in
                 words.contains { word in linkDomain.contains(word) }

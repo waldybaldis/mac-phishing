@@ -22,7 +22,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let popover = NSPopover()
         popover.contentSize = NSSize(width: 360, height: 480)
         popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: MenuBarView())
+        let hostingController = NSHostingController(rootView: MenuBarView())
+        hostingController.view.wantsLayer = true
+        hostingController.view.layer?.backgroundColor = NSColor.white.cgColor
+        popover.contentViewController = hostingController
         self.popover = popover
     }
 

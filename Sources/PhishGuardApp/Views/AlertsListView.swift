@@ -4,6 +4,7 @@ import PhishGuardCore
 /// Displays recent phishing alerts from the verdict database.
 struct AlertsListView: View {
     let accountManager: AccountManager
+    @AppStorage("sensitivityThreshold") private var sensitivityThreshold: Double = 3.0
     @State private var verdicts: [Verdict] = []
     @State private var selectedId: String?
 
@@ -27,6 +28,7 @@ struct AlertsListView: View {
                         ForEach(verdicts, id: \.messageId) { verdict in
                             AlertRow(
                                 verdict: verdict,
+                                accountLabel: accountLabel(for: verdict),
                                 isSelected: selectedId == verdict.messageId,
                                 onSelect: { selectedId = verdict.messageId },
                                 onDelete: { deleteVerdict(verdict) },
@@ -43,7 +45,7 @@ struct AlertsListView: View {
 
     private func refresh() {
         do {
-            verdicts = try accountManager.verdictStore.recentVerdicts(limit: 50, minimumScore: 3)
+            verdicts = try accountManager.verdictStore.recentVerdicts(limit: 50, minimumScore: Int(sensitivityThreshold))
         } catch {
             verdicts = []
         }
@@ -80,6 +82,13 @@ struct AlertsListView: View {
         }
     }
 
+    /// Resolves a verdict's accountId to the mailbox display name.
+    private func accountLabel(for verdict: Verdict) -> String? {
+        guard let id = verdict.accountId,
+              let account = accountManager.accounts.first(where: { $0.id == id }) else { return nil }
+        return account.discovered.name
+    }
+
     /// Extracts the href domain from a link mismatch reason string.
     /// Expected format: `Link displays "X" but actually points to "Y"`
     private func extractHrefDomain(from reason: String) -> String? {
@@ -97,6 +106,7 @@ struct AlertsListView: View {
 /// A single alert row styled like an email client message preview.
 struct AlertRow: View {
     let verdict: Verdict
+    let accountLabel: String?
     let isSelected: Bool
     let onSelect: () -> Void
     let onDelete: () -> Void
@@ -120,12 +130,21 @@ struct AlertRow: View {
                     .foregroundStyle(.tertiary)
             }
 
-            // Row 2: Email address
-            Text(verdict.senderEmail)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .padding(.leading, 14)
+            // Row 2: Email address + account
+            HStack {
+                Text(verdict.senderEmail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                if let label = accountLabel {
+                    Spacer()
+                    Text(label)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.leading, 14)
 
             // Row 3: Subject
             Text(verdict.subject.isEmpty ? "(No Subject)" : verdict.subject)

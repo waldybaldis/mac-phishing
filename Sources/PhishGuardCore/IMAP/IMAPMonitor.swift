@@ -47,15 +47,17 @@ public final class IMAPMonitor: @unchecked Sendable {
     private let account: AccountConfig
     private let analyzer: PhishingAnalyzer
     private let verdictStore: VerdictStore
+    private let accountId: String?
     private var state: State = .disconnected
     private var monitorTask: Task<Void, Never>?
     private var server: IMAPServer?
     private var idleSession: IMAPIdleSession?
 
-    public init(account: AccountConfig, analyzer: PhishingAnalyzer, verdictStore: VerdictStore) {
+    public init(account: AccountConfig, analyzer: PhishingAnalyzer, verdictStore: VerdictStore, accountId: String? = nil) {
         self.account = account
         self.analyzer = analyzer
         self.verdictStore = verdictStore
+        self.accountId = accountId
     }
 
     /// The current connection state.
@@ -235,7 +237,7 @@ public final class IMAPMonitor: @unchecked Sendable {
 
     /// Processes a new email: analyze it and store the verdict.
     public func processNewEmail(_ email: ParsedEmail, imapUID: UInt32? = nil) {
-        let verdict = analyzer.analyze(email: email, imapUID: imapUID)
+        let verdict = analyzer.analyze(email: email, imapUID: imapUID, accountId: accountId)
         try? verdictStore.save(verdict)
         delegate?.imapMonitor(self, didReceiveEmail: email)
     }
@@ -515,7 +517,7 @@ public final class IMAPMonitor: @unchecked Sendable {
                 headers: headers
             )
 
-            let verdict = analyzer.analyze(email: email, imapUID: info.uid?.value)
+            let verdict = analyzer.analyze(email: email, imapUID: info.uid?.value, accountId: accountId)
             verdicts.append(verdict)
         }
         let p4Time = CFAbsoluteTimeGetCurrent() - p4Start

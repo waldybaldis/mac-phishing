@@ -4,15 +4,15 @@ import SwiftUI
 struct SettingsView: View {
     var accountManager: AccountManager?
     @State private var scanCount: Int = 100
-    @State private var sensitivityThreshold: Double = 3.0
-    @State private var movePhishingToJunk = true
-    @State private var showNotifications = true
+    @AppStorage("sensitivityThreshold") private var sensitivityThreshold: Double = 3.0
     @State private var senderDomainCount: Int = 0
     @State private var linkDomainCount: Int = 0
     @State private var showSenderSheet = false
     @State private var showLinkSheet = false
     @State private var blacklistCount = 48231
     @State private var lastUpdated = Date().addingTimeInterval(-3600)
+    @State private var userBrandCount = 0
+    @State private var showUserBrandSheet = false
     @State private var safeonwebBrandCount = 0
     @State private var safeonwebLastUpdated: Date?
     @State private var safeonwebRefreshing = false
@@ -37,18 +37,6 @@ struct SettingsView: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
-                }
-                .padding(.horizontal, 14)
-
-                sectionDivider
-
-                // Actions
-                sectionHeader("Actions")
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle("Move phishing to Junk", isOn: $movePhishingToJunk)
-                        .font(.callout)
-                    Toggle("Show notifications", isOn: $showNotifications)
-                        .font(.callout)
                 }
                 .padding(.horizontal, 14)
 
@@ -115,54 +103,73 @@ struct SettingsView: View {
                     }
                     .controlSize(.small)
                     .buttonStyle(.bordered)
+                    .frame(width: 70)
                 }
                 .padding(.horizontal, 14)
 
                 sectionDivider
 
-                // Safeonweb Campaigns
-                sectionHeader("Safeonweb Campaigns")
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(safeonwebBrandCount) active brands")
+                // Brand Watchlist
+                sectionHeader("Brand Watchlist")
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Your brands — \(userBrandCount) brands")
                             .font(.caption)
-                        if let updated = safeonwebLastUpdated {
-                            Text("Updated \(updated, style: .relative) ago")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                        } else {
-                            Text("Never updated")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                        }
+                        Spacer()
+                        Button("Manage") { showUserBrandSheet = true }
+                            .controlSize(.small)
+                            .buttonStyle(.bordered)
+                            .frame(width: 70)
                     }
-                    Spacer()
-                    Button {
-                        guard let mgr = accountManager else { return }
-                        safeonwebRefreshing = true
-                        Task {
-                            _ = try? await mgr.safeonwebUpdater.update()
-                            await MainActor.run {
-                                safeonwebBrandCount = (try? mgr.campaignStore.count()) ?? 0
-                                safeonwebLastUpdated = try? mgr.campaignStore.lastFetched()
-                                safeonwebRefreshing = false
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Safeonweb — \(safeonwebBrandCount) active brands")
+                                .font(.caption)
+                            if let updated = safeonwebLastUpdated {
+                                Text("Updated \(updated, style: .relative) ago")
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
                             }
                         }
-                    } label: {
-                        if safeonwebRefreshing {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Text("Refresh")
+                        Spacer()
+                        Button {
+                            guard let mgr = accountManager else { return }
+                            safeonwebRefreshing = true
+                            Task {
+                                _ = try? await mgr.safeonwebUpdater.update()
+                                await MainActor.run {
+                                    safeonwebBrandCount = (try? mgr.campaignStore.count()) ?? 0
+                                    safeonwebLastUpdated = try? mgr.campaignStore.lastFetched()
+                                    safeonwebRefreshing = false
+                                }
+                            }
+                        } label: {
+                            if safeonwebRefreshing {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Text("Refresh")
+                            }
                         }
+                        .controlSize(.small)
+                        .buttonStyle(.bordered)
+                        .frame(width: 70)
+                        .disabled(safeonwebRefreshing)
                     }
-                    .controlSize(.small)
-                    .buttonStyle(.bordered)
-                    .disabled(safeonwebRefreshing)
                 }
                 .padding(.horizontal, 14)
                 .onAppear {
-                    refreshSafeonwebStats()
+                    refreshBrandCounts()
+                }
+                .sheet(isPresented: $showUserBrandSheet, onDismiss: { refreshBrandCounts() }) {
+                    if let mgr = accountManager {
+                        DomainListSheet(
+                            title: "Brand Watchlist",
+                            onAdd: { try mgr.userBrandStore.add(brand: $0) },
+                            onRemove: { try mgr.userBrandStore.remove(brand: $0) },
+                            loadDomains: { try mgr.userBrandStore.allBrands() }
+                        )
+                    }
                 }
                 .task {
                     // Check staleness on appear and refresh if needed
@@ -171,7 +178,7 @@ struct SettingsView: View {
                         safeonwebRefreshing = true
                         _ = try? await mgr.safeonwebUpdater.update()
                         await MainActor.run {
-                            refreshSafeonwebStats()
+                            refreshBrandCounts()
                             safeonwebRefreshing = false
                         }
                     }
@@ -182,8 +189,8 @@ struct SettingsView: View {
 
                     // Scan Mailbox
                     sectionHeader("Scan Mailbox")
-                    HStack {
-                        VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .center) {
                             Picker("Count", selection: $scanCount) {
                                 Text("100").tag(100)
                                 Text("250").tag(250)
@@ -194,28 +201,29 @@ struct SettingsView: View {
                             .pickerStyle(.segmented)
                             .labelsHidden()
 
-                            if let result = accountManager?.scanResult {
-                                Text("\(result.emailCount) emails scanned in \(String(format: "%.1f", result.totalTime))s")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
+                            Spacer()
+                            Button {
+                                guard let mgr = accountManager else { return }
+                                Task { await mgr.scanAllAccounts(count: scanCount) }
+                            } label: {
+                                if accountManager?.scanRunning == true {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Text("Scan")
+                                }
                             }
+                            .controlSize(.small)
+                            .buttonStyle(.bordered)
+                            .frame(width: 70)
+                            .disabled(accountManager?.scanRunning == true
+                                      || accountManager?.accounts.contains(where: \.isActivated) != true)
                         }
-                        Spacer()
-                        Button {
-                            guard let mgr = accountManager else { return }
-                            Task { await mgr.scanAllAccounts(count: scanCount) }
-                        } label: {
-                            if accountManager?.scanRunning == true {
-                                ProgressView()
-                                    .controlSize(.small)
-                            } else {
-                                Text("Scan")
-                            }
+                        if let result = accountManager?.scanResult {
+                            Text("\(result.emailCount) emails scanned in \(String(format: "%.1f", result.totalTime))s")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
-                        .controlSize(.small)
-                        .buttonStyle(.bordered)
-                        .disabled(accountManager?.scanRunning == true
-                                  || accountManager?.accounts.contains(where: \.isActivated) != true)
                     }
                     .padding(.horizontal, 14)
                 }
@@ -232,8 +240,9 @@ struct SettingsView: View {
         linkDomainCount = (try? mgr.trustedLinkDomainStore.count()) ?? 0
     }
 
-    private func refreshSafeonwebStats() {
+    private func refreshBrandCounts() {
         guard let mgr = accountManager else { return }
+        userBrandCount = (try? mgr.userBrandStore.count()) ?? 0
         safeonwebBrandCount = (try? mgr.campaignStore.count()) ?? 0
         safeonwebLastUpdated = try? mgr.campaignStore.lastFetched()
     }
