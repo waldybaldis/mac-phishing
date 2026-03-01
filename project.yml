@@ -4,6 +4,7 @@ options:
   bundleIdPrefix: com.phishguard
   deploymentTarget:
     macOS: "14.0"
+    iOS: "18.0"
   createIntermediateGroups: true
 
 settings:
@@ -39,10 +40,19 @@ schemes:
     profile:
       config: Release
 
+  PhishGuardMobile:
+    build:
+      targets:
+        PhishGuardMobile: all
+    run:
+      config: Debug
+    profile:
+      config: Release
+
 targets:
   PhishGuardCore:
     type: framework
-    platform: macOS
+    supportedDestinations: [macOS, iOS]
     sources:
       - Sources/PhishGuardCore
     dependencies:
@@ -67,6 +77,39 @@ targets:
     dependencies:
       - target: PhishGuardCore
       - target: PhishGuardMailExtension
+
+  PhishGuardMobile:
+    type: application
+    platform: iOS
+    sources:
+      - Sources/PhishGuardMobile
+      - path: Sources/PhishGuardApp/OAuthManager.swift
+      - path: Sources/PhishGuardApp/OAuthConfig.swift
+      - path: Sources/PhishGuardApp/KeychainHelper.swift
+    info:
+      path: Sources/PhishGuardMobile/Info.plist
+      properties:
+        CFBundleDisplayName: PhishGuard
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.phishguard.mobile.mail-check
+        UIBackgroundModes:
+          - fetch
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.phishguard.mobile
+        CODE_SIGN_ENTITLEMENTS: Sources/PhishGuardMobile/PhishGuardMobile.entitlements
+    dependencies:
+      - target: PhishGuardCore
 
   PhishGuardMailExtension:
     type: app-extension

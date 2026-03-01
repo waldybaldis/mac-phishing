@@ -286,10 +286,10 @@ public final class IMAPMonitor: @unchecked Sendable {
         try? await tempServer.disconnect()
     }
 
-    // MARK: - Benchmark
+    // MARK: - Inbox Scan
 
-    /// Result of a benchmark scan with timing breakdown.
-    public struct BenchmarkResult: Sendable {
+    /// Result of an inbox scan with timing breakdown.
+    public struct ScanResult: Sendable {
         public let emailCount: Int
         public let fetchInfoTime: TimeInterval
         public let fetchBodiesTime: TimeInterval
@@ -315,7 +315,7 @@ public final class IMAPMonitor: @unchecked Sendable {
 
     /// Fetches the last `count` emails, runs phishing analysis, and returns timing stats.
     /// Uses a separate IMAP connection so it doesn't disturb the IDLE monitor.
-    public func benchmarkScan(count: Int, credential: IMAPCredential) async throws -> BenchmarkResult {
+    public func scanInbox(count: Int, credential: IMAPCredential) async throws -> ScanResult {
         let benchServer = IMAPServer(host: account.imapServer, port: account.imapPort)
         let totalStart = CFAbsoluteTimeGetCurrent()
 
@@ -333,7 +333,7 @@ public final class IMAPMonitor: @unchecked Sendable {
         guard messageCount > 0 else {
             try? await benchServer.logout()
             try? await benchServer.disconnect()
-            return BenchmarkResult(
+            return ScanResult(
                 emailCount: 0, fetchInfoTime: 0, fetchBodiesTime: 0,
                 fetchHeadersTime: 0, analysisTime: 0, storageTime: 0,
                 totalTime: 0, skippedParts: 0
@@ -350,7 +350,7 @@ public final class IMAPMonitor: @unchecked Sendable {
         let messageInfos = try await benchServer.fetchMessageInfosBulk(using: seqSet)
         let p1Time = CFAbsoluteTimeGetCurrent() - p1Start
 
-        logger.info("Benchmark: fetched \(messageInfos.count) message infos in \(String(format: "%.2f", p1Time))s")
+        logger.info("Scan: fetched \(messageInfos.count) message infos in \(String(format: "%.2f", p1Time))s")
 
         // Create worker connections sequentially to avoid rate-limiting (e.g. Yahoo)
         let maxWorkers = 3
@@ -369,12 +369,12 @@ public final class IMAPMonitor: @unchecked Sendable {
                 try await worker.selectMailbox("INBOX")
                 workers.append(worker)
             } catch {
-                logger.warning("Benchmark: failed to create worker \(i): \(error.localizedDescription)")
+                logger.warning("Scan: failed to create worker \(i): \(error.localizedDescription)")
                 break  // Stop trying if a connection fails (likely rate-limited)
             }
         }
         let connTime = CFAbsoluteTimeGetCurrent() - connStart
-        logger.info("Benchmark: \(workers.count) worker connections in \(String(format: "%.2f", connTime))s")
+        logger.info("Scan: \(workers.count) worker connections in \(String(format: "%.2f", connTime))s")
         if workers.isEmpty { workers.append(benchServer) }
 
         // Phase 2: Fetch text body parts only (skip attachments) — parallel
@@ -538,7 +538,7 @@ public final class IMAPMonitor: @unchecked Sendable {
 
         // Log timing breakdown
         logger.info("""
-        === PhishGuard Benchmark: \(messageInfos.count) emails ===
+        === PhishGuard Inbox Scan: \(messageInfos.count) emails ===
         Worker connections (\(workers.count)):         \(String(format: "%.2f", connTime))s
         Phase 1 - Fetch message info (bulk):  \(String(format: "%.2f", p1Time))s
         Phase 2 - Fetch text bodies:          \(String(format: "%.2f", p2Time))s  (avg \(String(format: "%.3f", p2Time / max(n, 1)))s/email)
@@ -551,7 +551,7 @@ public final class IMAPMonitor: @unchecked Sendable {
         Emails with attachments skipped:       \(skippedParts) parts skipped
         """)
 
-        return BenchmarkResult(
+        return ScanResult(
             emailCount: messageInfos.count,
             fetchInfoTime: p1Time,
             fetchBodiesTime: p2Time,

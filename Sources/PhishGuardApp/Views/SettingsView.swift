@@ -5,10 +5,13 @@ struct SettingsView: View {
     var accountManager: AccountManager?
     @State private var scanCount: Int = 100
     @AppStorage("sensitivityThreshold") private var sensitivityThreshold: Double = 3.0
+    @AppStorage("showScore") private var showScore: Bool = false
     @State private var senderDomainCount: Int = 0
     @State private var linkDomainCount: Int = 0
     @State private var showSenderSheet = false
     @State private var showLinkSheet = false
+    @State private var blockedDomainCount: Int = 0
+    @State private var showBlockedSheet = false
     @State private var blacklistCount = 48231
     @State private var lastUpdated = Date().addingTimeInterval(-3600)
     @State private var userBrandCount = 0
@@ -39,6 +42,11 @@ struct SettingsView: View {
                     }
                 }
                 .padding(.horizontal, 14)
+
+                Toggle("Show score on alerts", isOn: $showScore)
+                    .font(.caption)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 4)
 
                 sectionDivider
 
@@ -81,6 +89,30 @@ struct SettingsView: View {
                             onAdd: { try mgr.trustedLinkDomainStore.add(domain: $0) },
                             onRemove: { try mgr.trustedLinkDomainStore.remove(domain: $0) },
                             loadDomains: { try Array(mgr.trustedLinkDomainStore.allDomains()) }
+                        )
+                    }
+                }
+
+                sectionDivider
+
+                // Blocked Domains
+                sectionHeader("Blocked Domains")
+                HStack {
+                    Text("Senders — \(blockedDomainCount) domains")
+                        .font(.caption)
+                    Spacer()
+                    Button("Manage") { showBlockedSheet = true }
+                        .controlSize(.small)
+                        .buttonStyle(.bordered)
+                }
+                .padding(.horizontal, 14)
+                .sheet(isPresented: $showBlockedSheet, onDismiss: { refreshDomainCounts() }) {
+                    if let mgr = accountManager {
+                        DomainListSheet(
+                            title: "Blocked Senders",
+                            onAdd: { try mgr.userBlocklistStore.add(domain: $0) },
+                            onRemove: { try mgr.userBlocklistStore.remove(domain: $0) },
+                            loadDomains: { try mgr.userBlocklistStore.allDomains() }
                         )
                     }
                 }
@@ -238,6 +270,7 @@ struct SettingsView: View {
         guard let mgr = accountManager else { return }
         senderDomainCount = (try? mgr.allowlistStore.allDomains().count) ?? 0
         linkDomainCount = (try? mgr.trustedLinkDomainStore.count()) ?? 0
+        blockedDomainCount = (try? mgr.userBlocklistStore.allDomains().count) ?? 0
     }
 
     private func refreshBrandCounts() {

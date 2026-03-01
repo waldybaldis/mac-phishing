@@ -2,48 +2,58 @@ import SwiftUI
 import PhishGuardCore
 
 /// Displays recent phishing alerts from the verdict database.
-struct AlertsListView: View {
-    let accountManager: AccountManager
+struct AlertsView: View {
+    @ObservedObject var accountManager: MobileAccountManager
     @AppStorage("sensitivityThreshold") private var sensitivityThreshold: Double = 3.0
     @AppStorage("showScore") private var showScore: Bool = false
     @State private var verdicts: [Verdict] = []
-    @State private var selectedId: String?
 
     var body: some View {
-        Group {
-            if verdicts.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "checkmark.shield")
-                        .font(.largeTitle)
-                        .foregroundStyle(.green)
-                    Text("No alerts")
-                        .font(.headline)
-                    Text("Your inbox is clean")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
+        NavigationStack {
+            Group {
+                if verdicts.isEmpty {
+                    ContentUnavailableView(
+                        "No Alerts",
+                        systemImage: "checkmark.shield",
+                        description: Text("Your inbox is clean")
+                    )
+                } else {
+                    List {
                         ForEach(verdicts, id: \.messageId) { verdict in
-                            AlertRow(
+                            MobileAlertRow(
                                 verdict: verdict,
                                 accountLabel: accountLabel(for: verdict),
                                 showScore: showScore,
-                                isSelected: selectedId == verdict.messageId,
-                                onSelect: { selectedId = verdict.messageId },
                                 onDelete: { deleteVerdict(verdict) },
                                 onMarkSafe: { markSafe(verdict) },
                                 onBlock: { blockSender(verdict) }
                             )
-                            Divider()
                         }
                     }
+                    .listStyle(.plain)
                 }
             }
+            .navigationTitle("Alerts")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    statusIndicator
+                }
+            }
+            .onAppear { refresh() }
+            .refreshable { refresh() }
         }
-        .onAppear { refresh() }
+    }
+
+    @ViewBuilder
+    private var statusIndicator: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(accountManager.isAnyMonitoring ? Color.green : Color.red)
+                .frame(width: 8, height: 8)
+            Text(accountManager.isAnyMonitoring ? "Monitoring" : "Stopped")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func refresh() {
@@ -64,25 +74,19 @@ struct AlertsListView: View {
     }
 
     private func markSafe(_ verdict: Verdict) {
-        // Add sender domain to allowlist so future emails from this sender skip analysis
         let senderDomain = ParsedEmail.extractDomain(from: verdict.from) ?? ""
         if !senderDomain.isEmpty {
             try? accountManager.allowlistStore.add(domain: senderDomain)
-            // Mark all existing verdicts from this domain as safe too
             try? accountManager.verdictStore.markDomainSafe(domain: senderDomain)
         }
 
-        // Extract href domains from link mismatch reasons and add to trusted link domains
         for reason in verdict.reasons where reason.checkName == "Link Text vs URL Mismatch Check" {
             if let hrefDomain = extractHrefDomain(from: reason.reason) {
                 try? accountManager.trustedLinkDomainStore.add(domain: hrefDomain)
             }
         }
 
-        // Refresh the full list so other alerts from the same sender disappear
-        withAnimation {
-            refresh()
-        }
+        withAnimation { refresh() }
     }
 
     private func blockSender(_ verdict: Verdict) {
@@ -94,49 +98,42 @@ struct AlertsListView: View {
         deleteVerdict(verdict)
     }
 
-    /// Resolves a verdict's accountId to the mailbox display name.
     private func accountLabel(for verdict: Verdict) -> String? {
         guard let id = verdict.accountId,
-              let account = accountManager.accounts.first(where: { $0.id == id }) else { return nil }
-        return account.discovered.name
+              let uuid = UUID(uuidString: id),
+              let account = accountManager.accounts.first(where: { $0.id == uuid }) else { return nil }
+        return account.displayName
     }
 
-    /// Extracts the href domain from a link mismatch reason string.
-    /// Expected format: `Link displays "X" but actually points to "Y"`
     private func extractHrefDomain(from reason: String) -> String? {
         guard let range = reason.range(of: "points to \"") else { return nil }
         let after = reason[range.upperBound...]
         guard let endQuote = after.firstIndex(of: "\"") else { return nil }
         let domain = String(after[after.startIndex..<endQuote])
-        // Extract base domain (take last 2 parts)
         let parts = domain.split(separator: ".").map(String.init)
         guard parts.count >= 2 else { return nil }
         return parts.suffix(2).joined(separator: ".")
     }
 }
 
-/// A single alert row styled like an email client message preview.
-struct AlertRow: View {
+/// A single alert row for iOS.
+struct MobileAlertRow: View {
     let verdict: Verdict
     let accountLabel: String?
     let showScore: Bool
-    let isSelected: Bool
-    let onSelect: () -> Void
     let onDelete: () -> Void
     let onMarkSafe: () -> Void
     let onBlock: () -> Void
 
-    @State private var isHovering = false
-
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Row 1: Threat indicator + Sender name + Date
-            HStack(alignment: .center, spacing: 6) {
+            HStack {
                 Circle()
                     .fill(threatColor)
-                    .frame(width: 8, height: 8)
+                    .frame(width: 10, height: 10)
                 Text(verdict.senderName)
-                    .font(.system(.callout, weight: .semibold))
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
                     .lineLimit(1)
                 Spacer()
                 Text(formattedDate)
@@ -144,7 +141,6 @@ struct AlertRow: View {
                     .foregroundStyle(.tertiary)
             }
 
-            // Row 2: Email address + account
             HStack {
                 Text(verdict.senderEmail)
                     .font(.caption)
@@ -158,69 +154,57 @@ struct AlertRow: View {
                         .lineLimit(1)
                 }
             }
-            .padding(.leading, 14)
 
-            // Row 3: Subject
             Text(verdict.subject.isEmpty ? "(No Subject)" : verdict.subject)
-                .font(.caption)
-                .lineLimit(1)
-                .padding(.leading, 14)
+                .font(.subheadline)
+                .lineLimit(2)
 
-            // Row 4: Top reason
             if let topReason = verdict.reasons.first {
                 Label(topReason.reason, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption2)
-                    .foregroundStyle(reasonColor)
+                    .font(.caption)
+                    .foregroundStyle(verdict.score >= 6 ? .red : .orange)
                     .lineLimit(2)
-                    .padding(.leading, 14)
             }
 
-            // Row 5: Actions (shown on hover or when selected)
-            if isHovering || isSelected {
-                HStack(spacing: 10) {
-                    Button { onMarkSafe() } label: {
-                        Label("Safe", systemImage: "checkmark.circle")
-                            .font(.caption2)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.green)
-
-                    Button { onBlock() } label: {
-                        Label("Block", systemImage: "slash.circle")
-                            .font(.caption2)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.orange)
-
-                    Button { onDelete() } label: {
-                        Label("Delete", systemImage: "trash")
-                            .font(.caption2)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.red)
-
-                    Spacer()
-
-                    if showScore {
-                        Text("\(verdict.score)")
-                            .font(.caption2.weight(.bold))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 1)
-                            .background(threatColor.opacity(0.15))
-                            .foregroundStyle(threatColor)
-                            .clipShape(Capsule())
-                    }
+            HStack {
+                Button { onMarkSafe() } label: {
+                    Label("Safe", systemImage: "checkmark.circle")
+                        .font(.caption)
                 }
-                .padding(.leading, 14)
-                .transition(.opacity)
+                .buttonStyle(.bordered)
+                .tint(.green)
+                .controlSize(.small)
+
+                Button { onBlock() } label: {
+                    Label("Block", systemImage: "slash.circle")
+                        .font(.caption)
+                }
+                .buttonStyle(.bordered)
+                .tint(.orange)
+                .controlSize(.small)
+
+                Button(role: .destructive) { onDelete() } label: {
+                    Label("Delete", systemImage: "trash")
+                        .font(.caption)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Spacer()
+
+                if showScore {
+                    Text("Score: \(verdict.score)")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(threatColor.opacity(0.15))
+                        .foregroundStyle(threatColor)
+                        .clipShape(Capsule())
+                }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(isSelected ? Color.accentColor.opacity(0.08) : (isHovering ? Color.primary.opacity(0.03) : Color.clear))
-        .contentShape(Rectangle())
-        .onTapGesture { onSelect() }
-        .onHover { isHovering = $0 }
+        .padding(.vertical, 4)
     }
 
     private var threatColor: Color {
@@ -229,10 +213,6 @@ struct AlertRow: View {
         case 3...5: return .orange
         default: return .red
         }
-    }
-
-    private var reasonColor: Color {
-        verdict.score >= 6 ? .red : .orange
     }
 
     private var formattedDate: String {

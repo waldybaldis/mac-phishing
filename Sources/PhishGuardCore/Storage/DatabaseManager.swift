@@ -43,6 +43,10 @@ public final class DatabaseManager: @unchecked Sendable {
     static let userBrand = SQLite.Expression<String>("brand")
     static let userBrandTimestamp = SQLite.Expression<Double>("timestamp")
 
+    static let userBlocklist = Table("user_blocklist")
+    static let userBlocklistDomain = SQLite.Expression<String>("domain")
+    static let userBlocklistTimestamp = SQLite.Expression<Double>("timestamp")
+
     public init(databasePath: String? = nil) throws {
         let path = databasePath ?? Self.defaultDatabasePath()
 
@@ -135,6 +139,11 @@ public final class DatabaseManager: @unchecked Sendable {
         try connection.run(Self.userBrands.create(ifNotExists: true) { t in
             t.column(Self.userBrand, primaryKey: true)
             t.column(Self.userBrandTimestamp)
+        })
+
+        try connection.run(Self.userBlocklist.create(ifNotExists: true) { t in
+            t.column(Self.userBlocklistDomain, primaryKey: true)
+            t.column(Self.userBlocklistTimestamp)
         })
 
         try connection.run(Self.verdicts.createIndex(Self.verdictTimestamp, ifNotExists: true))

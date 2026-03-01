@@ -36,7 +36,7 @@ public struct AccountConfig: Sendable, Codable, Identifiable {
 }
 
 /// Well-known IMAP server presets.
-public enum MailProvider: String, CaseIterable, Sendable {
+public enum MailProvider: String, CaseIterable, Codable, Sendable {
     case icloud = "iCloud"
     case outlook = "Outlook"
     case gmail = "Gmail"

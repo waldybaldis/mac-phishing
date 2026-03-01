@@ -87,6 +87,7 @@ final class AccountManager: ObservableObject {
     let trustedLinkDomainStore: TrustedLinkDomainStore
     let campaignStore: SafeonwebCampaignStore
     let userBrandStore: UserBrandStore
+    let userBlocklistStore: UserBlocklistStore
     let safeonwebUpdater: SafeonwebUpdater
     private let dbManager: DatabaseManager?
 
@@ -101,22 +102,26 @@ final class AccountManager: ObservableObject {
             let trustedLinkDomainStore = TrustedLinkDomainStore(database: db)
             let campaignStore = SafeonwebCampaignStore(database: db)
             let userBrandStore = UserBrandStore(database: db)
+            let userBlocklistStore = UserBlocklistStore(database: db)
             self.verdictStore = VerdictStore(database: db)
             self.allowlistStore = allowlistStore
             self.trustedLinkDomainStore = trustedLinkDomainStore
             self.campaignStore = campaignStore
             self.userBrandStore = userBrandStore
+            self.userBlocklistStore = userBlocklistStore
             self.safeonwebUpdater = SafeonwebUpdater(campaignStore: campaignStore)
-            self.analyzer = PhishingAnalyzer(blacklistStore: blacklistStore, allowlistStore: allowlistStore, trustedLinkDomainStore: trustedLinkDomainStore, campaignStore: campaignStore, userBrandStore: userBrandStore)
+            self.analyzer = PhishingAnalyzer(blacklistStore: blacklistStore, allowlistStore: allowlistStore, trustedLinkDomainStore: trustedLinkDomainStore, campaignStore: campaignStore, userBrandStore: userBrandStore, userBlocklistStore: userBlocklistStore)
         } else {
             let memDb = try! DatabaseManager(databasePath: ":memory:")
             let campaignStore = SafeonwebCampaignStore(database: memDb)
             let userBrandStore = UserBrandStore(database: memDb)
+            let userBlocklistStore = UserBlocklistStore(database: memDb)
             self.verdictStore = VerdictStore(database: memDb)
             self.allowlistStore = AllowlistStore(database: memDb)
             self.trustedLinkDomainStore = TrustedLinkDomainStore(database: memDb)
             self.campaignStore = campaignStore
             self.userBrandStore = userBrandStore
+            self.userBlocklistStore = userBlocklistStore
             self.safeonwebUpdater = SafeonwebUpdater(campaignStore: campaignStore)
             self.analyzer = PhishingAnalyzer(checks: [
                 AuthHeaderCheck(),
@@ -125,6 +130,7 @@ final class AccountManager: ObservableObject {
                 IPURLCheck(),
                 SuspiciousTLDCheck(),
                 BrandImpersonationCheck(campaignStore: campaignStore, userBrandStore: userBrandStore),
+                UserBlocklistCheck(userBlocklistStore: userBlocklistStore),
             ])
         }
 
@@ -246,7 +252,7 @@ final class AccountManager: ObservableObject {
     // MARK: - Scan Mailbox
 
     @Published var scanRunning = false
-    @Published var scanResult: IMAPMonitor.BenchmarkResult?
+    @Published var scanResult: IMAPMonitor.ScanResult?
 
     /// Scans the last `count` emails from each activated account's mailbox.
     func scanAllAccounts(count: Int) async {
@@ -280,7 +286,7 @@ final class AccountManager: ObservableObject {
             let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore, accountId: account.id)
 
             do {
-                let result = try await monitor.benchmarkScan(count: count, credential: credential)
+                let result = try await monitor.scanInbox(count: count, credential: credential)
                 totalEmails += result.emailCount
                 totalTime += result.totalTime
                 totalSkipped += result.skippedParts
@@ -290,7 +296,7 @@ final class AccountManager: ObservableObject {
             }
         }
 
-        scanResult = IMAPMonitor.BenchmarkResult(
+        scanResult = IMAPMonitor.ScanResult(
             emailCount: totalEmails,
             fetchInfoTime: 0,
             fetchBodiesTime: 0,
