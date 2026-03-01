@@ -24,5 +24,9 @@ Package.resolved
 xcuserdata/
 *.playground/
 
+# Credentials
+Sources/PhishGuardApp/OAuthConfig.swift
+Sources/PhishGuardApp/Info.plist
+
 # Build artifacts
 build/
