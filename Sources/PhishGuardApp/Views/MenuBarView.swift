@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The main popover view shown from the menu bar icon.
 struct MenuBarView: View {
-    @StateObject private var accountManager = AccountManager()
+    @ObservedObject var accountManager: AccountManager
     @State private var selectedTab = 0
 
     var body: some View {

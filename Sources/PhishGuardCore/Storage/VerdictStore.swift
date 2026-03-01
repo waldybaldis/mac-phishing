@@ -1,6 +1,11 @@
 import Foundation
 import SQLite
 
+/// Posted when a verdict with a notable score is saved. The `object` is the `Verdict`.
+public extension Notification.Name {
+    static let phishGuardNewAlert = Notification.Name("phishGuardNewAlert")
+}
+
 /// Manages verdict CRUD operations in the shared database.
 public final class VerdictStore: @unchecked Sendable {
     private let db: DatabaseManager
@@ -29,6 +34,10 @@ public final class VerdictStore: @unchecked Sendable {
                 DatabaseManager.verdictAccountId <- verdict.accountId
             )
         )
+
+        if verdict.score >= 3 {
+            NotificationCenter.default.post(name: .phishGuardNewAlert, object: verdict)
+        }
     }
 
     /// Looks up a verdict by message ID.
@@ -69,6 +78,14 @@ public final class VerdictStore: @unchecked Sendable {
         return try db.connection.run(target.update(
             DatabaseManager.verdictActionTaken <- ActionType.markedSafe.rawValue
         ))
+    }
+
+    /// Returns the count of unacted verdicts at or above the given score.
+    public func alertCount(minimumScore: Int) throws -> Int {
+        let query = DatabaseManager.verdicts
+            .filter(DatabaseManager.verdictScore >= minimumScore)
+            .filter(DatabaseManager.verdictActionTaken == nil)
+        return try db.connection.scalar(query.count)
     }
 
     /// Deletes verdicts older than the specified number of days.

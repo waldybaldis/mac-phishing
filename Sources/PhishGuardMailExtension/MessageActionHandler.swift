@@ -2,6 +2,9 @@ import Foundation
 #if canImport(MailKit)
 import MailKit
 import SQLite
+import os.log
+
+private let logger = Logger(subsystem: "com.phishguard.mailextension", category: "MessageAction")
 
 /// Mail Extension handler that applies visual labels to emails based on PhishGuard verdicts.
 ///
@@ -10,28 +13,46 @@ import SQLite
 /// and falls back to a lightweight Authentication-Results check if no verdict exists yet.
 final class MessageActionHandler: NSObject, MEMessageActionHandler {
 
+    /// Headers the extension needs Mail to provide.
+    var requiredHeaders: [String] {
+        ["Message-ID", "Authentication-Results"]
+    }
+
     /// Decides what action to take for a message.
     func decideAction(for message: MEMessage, completionHandler: @escaping @Sendable (MEMessageActionDecision?) -> Void) {
+        logger.info("decideAction called for subject: \(message.subject ?? "nil", privacy: .public)")
+        logger.info("  headers: \(String(describing: message.headers), privacy: .public)")
+
         guard let messageId = extractMessageId(from: message) else {
+            logger.warning("  No Message-ID found — skipping")
             completionHandler(nil)
             return
         }
 
+        logger.info("  Message-ID: \(messageId, privacy: .public)")
+
         // 1. Look up verdict in shared SQLite
         if let verdict = lookupVerdict(messageId: messageId) {
+            logger.info("  Verdict found: score=\(verdict.score)")
             let action = actionForVerdict(verdict)
+            logger.info("  Action: \(String(describing: action), privacy: .public)")
             completionHandler(action)
             return
         }
 
+        logger.info("  No verdict in database")
+
         // 2. Fallback: lightweight local check on Authentication-Results
         if let authResults = message.headers?["Authentication-Results"] as? String {
+            logger.info("  Auth-Results: \(authResults, privacy: .public)")
             let fallbackAction = fallbackAuthCheck(authResults: authResults)
+            logger.info("  Fallback action: \(String(describing: fallbackAction), privacy: .public)")
             completionHandler(fallbackAction)
             return
         }
 
         // 3. No verdict, no auth header — take no action
+        logger.info("  No auth header either — no action")
         completionHandler(nil)
     }
 
@@ -40,18 +61,39 @@ final class MessageActionHandler: NSObject, MEMessageActionHandler {
     private func lookupVerdict(messageId: String) -> StoredVerdict? {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: "group.com.phishguard"
-        ) else { return nil }
+        ) else {
+            logger.error("  App Group container not available")
+            return nil
+        }
 
         let dbPath = containerURL.appendingPathComponent("verdicts.sqlite").path
-        guard let db = try? Connection(dbPath) else { return nil }
+        logger.info("  DB path: \(dbPath, privacy: .public)")
+
+        guard let db = try? Connection(dbPath, readonly: true) else {
+            logger.error("  Failed to open database")
+            return nil
+        }
 
         let verdicts = Table("verdicts")
         let msgId = SQLite.Expression<String>("message_id")
         let score = SQLite.Expression<Int>("score")
-        let query = verdicts.filter(msgId == messageId)
 
-        guard let row = try? db.pluck(query) else { return nil }
-        return StoredVerdict(messageId: messageId, score: row[score])
+        // Try exact match first, then try with/without angle brackets
+        let candidates = [
+            messageId,
+            messageId.hasPrefix("<") ? String(messageId.dropFirst().dropLast()) : "<\(messageId)>",
+        ]
+
+        for candidate in candidates {
+            let query = verdicts.filter(msgId == candidate)
+            if let row = try? db.pluck(query) {
+                logger.info("  Found verdict for: \(candidate, privacy: .public)")
+                return StoredVerdict(messageId: candidate, score: row[score])
+            }
+        }
+
+        logger.info("  No verdict for any ID variant")
+        return nil
     }
 
     // MARK: - Action Mapping

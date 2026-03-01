@@ -70,6 +70,7 @@
 		E47BA19541FF180F083A5ECF /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A16F72D51DA6F775EB7A102F /* NotificationManager.swift */; };
 		EAE029C43BFD19CE02C3E740 /* PhishGuardCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9BB55CEA9ACFA9DADF7BDDDB /* PhishGuardCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		F60CEB91E09EDFBD523E213D /* MessageActionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 882C8C99B4C7F1D62A83A885 /* MessageActionHandler.swift */; };
+		EE1122334455667788990001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EE1122334455667788990002 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -202,6 +203,7 @@
 		AA1122334455667788990005 /* SafeonwebBrandExtractorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeonwebBrandExtractorTests.swift; sourceTree = "<group>"; };
 		AA1122334455667788990006 /* SafeonwebRSSParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeonwebRSSParserTests.swift; sourceTree = "<group>"; };
 		AA1122334455667788990007 /* SafeonwebCampaignStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeonwebCampaignStoreTests.swift; sourceTree = "<group>"; };
+		EE1122334455667788990002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -338,6 +340,7 @@
 		B310D31F4EFBA3F331BF37BF /* PhishGuardApp */ = {
 			isa = PBXGroup;
 			children = (
+				EE1122334455667788990002 /* Assets.xcassets */,
 				F65130C2ADA569AF3034A4B6 /* AccountManager.swift */,
 				FBCAC9B26F801F53C20A6C6A /* AppDelegate.swift */,
 				0A4CE6FBEACD352CE3B60B16 /* Info.plist */,
@@ -468,6 +471,7 @@
 			buildConfigurationList = 4DBFD4A485D05B2D77E45DE3 /* Build configuration list for PBXNativeTarget "PhishGuardApp" */;
 			buildPhases = (
 				6ED0510721A5E815B7955EBE /* Sources */,
+				EE1122334455667788990003 /* Resources */,
 				217F048BE3B131FB461A2BDF /* Frameworks */,
 				44222A5F5CFFFCEF7787A70B /* Embed Foundation Extensions */,
 				DC1996DEEDADE9BF934703E7 /* Embed Frameworks */,
@@ -579,6 +583,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		EE1122334455667788990003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EE1122334455667788990001 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		38B90F1BAAE5DC9A0E235C8A /* Sources */ = {
