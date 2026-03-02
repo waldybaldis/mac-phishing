@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A1B2C3D4E5F60718A9B0C1D2 /* DomainUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C60718D9E0F1A2 /* DomainUtils.swift */; };
+		A2B3C4D5E6F70829B0C1D2E3 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E3F4A5B6C70829E0F1A2B3 /* AppConstants.swift */; };
+		A3B4C5D6E7F8093AC1D2E3F4 /* PhishGuardThresholds.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E4F5A6B7C8093AF1A2B3C4 /* PhishGuardThresholds.swift */; };
+		A4B5C6D7E8F90A4BD2E3F4A5 /* CoreSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6A7B8C90A4BA2B3C4D5 /* CoreSession.swift */; };
+		A5B6C7D8E9FA0B5CE3F4A5B6 /* VerdictActionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E6F7A8B9CA0B5CB3C4D5E6 /* VerdictActionService.swift */; };
 		063FBE0C37346FE4FCDBCD24 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0734A7E95F448CC91E97862E /* ContentView.swift */; };
 		0680F6CEB3BBDB44DE58B9F1 /* MobileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 360356AC828A2BF603082EAE /* MobileSettingsView.swift */; };
 		07E580BEBB75F04D6C0225E1 /* AllowlistStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E67A48886054C75E5526C57 /* AllowlistStore.swift */; };
@@ -254,6 +259,11 @@
 		FD95F1230494598E60EECB33 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FE1B3DEAABEE56AC3917BC22 /* AddAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddAccountView.swift; sourceTree = "<group>"; };
 		FEBE6FFCC665DF9D085C50E9 /* AuthHeaderCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHeaderCheck.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C60718D9E0F1A2 /* DomainUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainUtils.swift; sourceTree = "<group>"; };
+		D2E3F4A5B6C70829E0F1A2B3 /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
+		D3E4F5A6B7C8093AF1A2B3C4 /* PhishGuardThresholds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhishGuardThresholds.swift; sourceTree = "<group>"; };
+		D4E5F6A7B8C90A4BA2B3C4D5 /* CoreSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreSession.swift; sourceTree = "<group>"; };
+		D5E6F7A8B9CA0B5CB3C4D5E6 /* VerdictActionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerdictActionService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -331,8 +341,10 @@
 			isa = PBXGroup;
 			children = (
 				7FB00817449F6EDCA232919E /* AccountConfig.swift */,
+				D2E3F4A5B6C70829E0F1A2B3 /* AppConstants.swift */,
 				7BB0F585FFFDBDDE408690DE /* MailProviderDetector.swift */,
 				788FE202A6CFF73080126853 /* ParsedEmail.swift */,
+				D3E4F5A6B7C8093AF1A2B3C4 /* PhishGuardThresholds.swift */,
 				9DEA1CD9B1FDD9837408CF28 /* Verdict.swift */,
 			);
 			path = Models;
@@ -343,11 +355,13 @@
 			children = (
 				6E67A48886054C75E5526C57 /* AllowlistStore.swift */,
 				AD6426AAF11A11EBEA1B6269 /* BlacklistStore.swift */,
+				D4E5F6A7B8C90A4BA2B3C4D5 /* CoreSession.swift */,
 				D007504B256CDBC56A799369 /* DatabaseManager.swift */,
 				FBA89B083F2F8AB824EF36A2 /* SafeonwebCampaignStore.swift */,
 				873A25B18CFC187EADB9CB04 /* TrustedLinkDomainStore.swift */,
 				27C01C71780AB2DA8C85D0FC /* UserBlocklistStore.swift */,
 				E0FA9C9350A02B49E7BA99AC /* UserBrandStore.swift */,
+				D5E6F7A8B9CA0B5CB3C4D5E6 /* VerdictActionService.swift */,
 				F77592879218CC41BE8EDB20 /* VerdictStore.swift */,
 			);
 			path = Storage;
@@ -437,6 +451,7 @@
 				FEBE6FFCC665DF9D085C50E9 /* AuthHeaderCheck.swift */,
 				5EC29B4FFCFF240932E40153 /* BlacklistCheck.swift */,
 				E63E8D5E9F7AAD8F236C8333 /* BrandImpersonationCheck.swift */,
+				D1E2F3A4B5C60718D9E0F1A2 /* DomainUtils.swift */,
 				536AE1C4CE8C5F5B80AA5CB6 /* IPURLCheck.swift */,
 				E1E91D376C520E3681C4B330 /* LinkMismatchCheck.swift */,
 				E08D56E1E055D9B91B12D5A3 /* PhishingAnalyzer.swift */,
@@ -752,18 +767,22 @@
 			files = (
 				9C0CD753B279D5FF364F903E /* AccountConfig.swift in Sources */,
 				07E580BEBB75F04D6C0225E1 /* AllowlistStore.swift in Sources */,
+				A2B3C4D5E6F70829B0C1D2E3 /* AppConstants.swift in Sources */,
 				67952EBD2C418AB68D3E60E4 /* AuthHeaderCheck.swift in Sources */,
 				791106863B5CFC6F86AFCB36 /* BlacklistCheck.swift in Sources */,
 				7D6223D9FCE35C8B0EFEF1FE /* BlacklistStore.swift in Sources */,
 				CCDE9F2BF94DE5044215690F /* BlacklistUpdater.swift in Sources */,
 				FF765F1F01087908E12CB86B /* BrandImpersonationCheck.swift in Sources */,
+				A4B5C6D7E8F90A4BD2E3F4A5 /* CoreSession.swift in Sources */,
 				BF7C9B3664948BEFBEF6515E /* DatabaseManager.swift in Sources */,
+				A1B2C3D4E5F60718A9B0C1D2 /* DomainUtils.swift in Sources */,
 				0D27A3093340B8FF82A2B6A8 /* IMAPMonitor.swift in Sources */,
 				6A53BD423C99BBE9F1F7F36D /* IPURLCheck.swift in Sources */,
 				9A8B414F7400EE1E330F458A /* LinkMismatchCheck.swift in Sources */,
 				4F92C8BE68D301EBCE906CB5 /* MailProviderDetector.swift in Sources */,
 				E47BA19541FF180F083A5ECF /* NotificationManager.swift in Sources */,
 				97BBEAE88AE0FF5AA233CA27 /* ParsedEmail.swift in Sources */,
+				A3B4C5D6E7F8093AC1D2E3F4 /* PhishGuardThresholds.swift in Sources */,
 				671E47AE840EA257F8CCA36C /* PhishingAnalyzer.swift in Sources */,
 				BF5586ED9F66B131B75CF90D /* PhishingCheck.swift in Sources */,
 				826E302D3712F4413678AA94 /* ReturnPathCheck.swift in Sources */,
@@ -777,6 +796,7 @@
 				AD51E02BAAE12E095EAC8CB2 /* UserBlocklistStore.swift in Sources */,
 				4A2221B8BDED7D97B967F3C2 /* UserBrandStore.swift in Sources */,
 				548AB508F8796930D0E1296F /* Verdict.swift in Sources */,
+				A5B6C7D8E9FA0B5CE3F4A5B6 /* VerdictActionService.swift in Sources */,
 				47FD0D1447EC459004BB8B3A /* VerdictStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
