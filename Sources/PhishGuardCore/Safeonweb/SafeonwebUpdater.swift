@@ -4,6 +4,8 @@ import os.log
 private let logger = Logger(subsystem: "com.phishguard", category: "SafeonwebUpdater")
 
 /// Downloads and processes the Safeonweb RSS feed to extract active phishing campaign brands.
+/// @unchecked Sendable: refreshTimer is only accessed from the main thread (scheduled via
+/// RunLoop.main). The campaignStore and urlSession are immutable after init.
 public final class SafeonwebUpdater: @unchecked Sendable {
     /// The Safeonweb phishing alerts RSS feed URLs (Dutch + English for maximum brand coverage).
     public static let feedURLs = [

@@ -2,6 +2,8 @@ import Foundation
 import SQLite
 
 /// Manages the phishing domain blacklist in the shared database.
+/// @unchecked Sendable: only holds an immutable reference to DatabaseManager.
+/// Thread safety is provided by SQLite.swift's Connection (WAL mode + busyTimeout).
 public final class BlacklistStore: @unchecked Sendable {
     private let db: DatabaseManager
 

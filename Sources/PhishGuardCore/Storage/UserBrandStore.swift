@@ -2,6 +2,8 @@ import Foundation
 import SQLite
 
 /// Manages user-defined brand names to watch for impersonation.
+/// @unchecked Sendable: only holds an immutable reference to DatabaseManager.
+/// Thread safety is provided by SQLite.swift's Connection (WAL mode + busyTimeout).
 public final class UserBrandStore: @unchecked Sendable {
     private let db: DatabaseManager
 

@@ -82,7 +82,7 @@ final class BackgroundMonitor {
     static func sendNotification(for verdict: Verdict) {
         let content = UNMutableNotificationContent()
 
-        if verdict.score >= 6 {
+        if verdict.score >= PhishGuardThresholds.phishing {
             content.title = "Phishing Alert"
             content.sound = .defaultCritical
         } else {

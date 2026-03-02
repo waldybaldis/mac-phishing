@@ -2,6 +2,8 @@ import Foundation
 import SQLite
 
 /// Manages the shared SQLite database in the App Group container.
+/// @unchecked Sendable: all state is immutable after init. SQLite.swift's Connection
+/// is thread-safe with WAL mode + busyTimeout.
 public final class DatabaseManager: @unchecked Sendable {
     let connection: Connection
 
@@ -69,12 +71,13 @@ public final class DatabaseManager: @unchecked Sendable {
     /// Returns the default database path in the App Group container.
     public static func defaultDatabasePath() -> String {
         if let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.com.phishguard"
+            forSecurityApplicationGroupIdentifier: AppConstants.appGroupIdentifier
         ) {
             return containerURL.appendingPathComponent("verdicts.sqlite").path
         }
         // Fallback for unsigned dev builds
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
         let phishGuardDir = appSupport.appendingPathComponent("PhishGuard")
         return phishGuardDir.appendingPathComponent("verdicts.sqlite").path
     }

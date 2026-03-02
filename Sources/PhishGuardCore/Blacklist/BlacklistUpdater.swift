@@ -1,6 +1,7 @@
 import Foundation
 
 /// Downloads and updates the phishing domain blacklist from remote sources.
+/// @unchecked Sendable: all state (stores, urlSession) is immutable after init.
 public final class BlacklistUpdater: @unchecked Sendable {
     /// The Phishing Army blocklist URL.
     public static let phishingArmyURL = URL(string: "https://phishing.army/download/phishing_army_blocklist.txt")!

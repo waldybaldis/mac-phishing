@@ -18,6 +18,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupNotifications()
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        alertTimer?.invalidate()
+        alertTimer = nil
+        if let alertObserver {
+            NotificationCenter.default.removeObserver(alertObserver)
+            self.alertObserver = nil
+        }
+    }
+
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
@@ -62,9 +71,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let button = statusItem?.button else { return }
 
         let threshold = Int(UserDefaults.standard.double(forKey: "sensitivityThreshold"))
-        let effectiveThreshold = threshold > 0 ? threshold : 3
+        let effectiveThreshold = threshold > 0 ? threshold : PhishGuardThresholds.suspicious
 
-        let redCount = (try? accountManager.verdictStore.alertCount(minimumScore: 6)) ?? 0
+        let redCount = (try? accountManager.verdictStore.alertCount(minimumScore: PhishGuardThresholds.phishing)) ?? 0
         let orangeCount = (try? accountManager.verdictStore.alertCount(minimumScore: effectiveThreshold)) ?? 0
 
         if redCount > 0 {
@@ -102,7 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func sendUserNotification(for verdict: Verdict) {
         let content = UNMutableNotificationContent()
 
-        if verdict.score >= 6 {
+        if verdict.score >= PhishGuardThresholds.phishing {
             content.title = "Phishing Alert"
             content.sound = .defaultCritical
         } else {

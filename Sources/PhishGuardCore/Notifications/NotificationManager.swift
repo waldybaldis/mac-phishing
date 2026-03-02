@@ -1,8 +1,13 @@
 import Foundation
+import os.log
 #if canImport(UserNotifications)
 import UserNotifications
 
+private let logger = Logger(subsystem: "com.phishguard", category: "NotificationManager")
+
 /// Manages macOS notifications for phishing alerts.
+/// @unchecked Sendable: setup() and notify() are called from @MainActor context.
+/// The UNUserNotificationCenter delegate callbacks run on the main thread.
 public final class NotificationManager: NSObject, @unchecked Sendable {
     public static let shared = NotificationManager()
 
@@ -28,7 +33,7 @@ public final class NotificationManager: NSObject, @unchecked Sendable {
 
         center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error {
-                print("Notification permission error: \(error.localizedDescription)")
+                logger.error("Notification permission error: \(error.localizedDescription)")
             }
         }
 
@@ -87,7 +92,7 @@ public final class NotificationManager: NSObject, @unchecked Sendable {
 
         center.add(request) { error in
             if let error {
-                print("Failed to deliver notification: \(error.localizedDescription)")
+                logger.error("Failed to deliver notification: \(error.localizedDescription)")
             }
         }
     }

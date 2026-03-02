@@ -81,72 +81,29 @@ final class AccountManager: ObservableObject {
     let oauthManager = OAuthManager()
 
     private var monitors: [String: IMAPMonitor] = [:]
-    private let analyzer: PhishingAnalyzer
-    let verdictStore: VerdictStore
-    let allowlistStore: AllowlistStore
-    let trustedLinkDomainStore: TrustedLinkDomainStore
-    let campaignStore: SafeonwebCampaignStore
-    let userBrandStore: UserBrandStore
-    let userBlocklistStore: UserBlocklistStore
-    let safeonwebUpdater: SafeonwebUpdater
-    private let dbManager: DatabaseManager?
+    let session: CoreSession
+
+    // Convenience accessors for stores
+    var verdictStore: VerdictStore { session.verdictStore }
+    var blacklistStore: BlacklistStore { session.blacklistStore }
+    var allowlistStore: AllowlistStore { session.allowlistStore }
+    var trustedLinkDomainStore: TrustedLinkDomainStore { session.trustedLinkDomainStore }
+    var campaignStore: SafeonwebCampaignStore { session.campaignStore }
+    var userBrandStore: UserBrandStore { session.userBrandStore }
+    var userBlocklistStore: UserBlocklistStore { session.userBlocklistStore }
+    var safeonwebUpdater: SafeonwebUpdater { session.safeonwebUpdater }
 
     private static let activatedAccountsKey = "activatedAccounts"
 
     init() {
-        let db = try? DatabaseManager()
-        self.dbManager = db
-        if let db = db {
-            let blacklistStore = BlacklistStore(database: db)
-            let allowlistStore = AllowlistStore(database: db)
-            let trustedLinkDomainStore = TrustedLinkDomainStore(database: db)
-            let campaignStore = SafeonwebCampaignStore(database: db)
-            let userBrandStore = UserBrandStore(database: db)
-            let userBlocklistStore = UserBlocklistStore(database: db)
-            self.verdictStore = VerdictStore(database: db)
-            self.allowlistStore = allowlistStore
-            self.trustedLinkDomainStore = trustedLinkDomainStore
-            self.campaignStore = campaignStore
-            self.userBrandStore = userBrandStore
-            self.userBlocklistStore = userBlocklistStore
-            self.safeonwebUpdater = SafeonwebUpdater(campaignStore: campaignStore)
-            self.analyzer = PhishingAnalyzer(blacklistStore: blacklistStore, allowlistStore: allowlistStore, trustedLinkDomainStore: trustedLinkDomainStore, campaignStore: campaignStore, userBrandStore: userBrandStore, userBlocklistStore: userBlocklistStore)
-        } else {
-            let memDb = try! DatabaseManager(databasePath: ":memory:")
-            let campaignStore = SafeonwebCampaignStore(database: memDb)
-            let userBrandStore = UserBrandStore(database: memDb)
-            let userBlocklistStore = UserBlocklistStore(database: memDb)
-            self.verdictStore = VerdictStore(database: memDb)
-            self.allowlistStore = AllowlistStore(database: memDb)
-            self.trustedLinkDomainStore = TrustedLinkDomainStore(database: memDb)
-            self.campaignStore = campaignStore
-            self.userBrandStore = userBrandStore
-            self.userBlocklistStore = userBlocklistStore
-            self.safeonwebUpdater = SafeonwebUpdater(campaignStore: campaignStore)
-            self.analyzer = PhishingAnalyzer(checks: [
-                AuthHeaderCheck(),
-                ReturnPathCheck(),
-                LinkMismatchCheck(trustedLinkDomainStore: self.trustedLinkDomainStore),
-                IPURLCheck(),
-                SuspiciousTLDCheck(),
-                BrandImpersonationCheck(campaignStore: campaignStore, userBrandStore: userBrandStore),
-                UserBlocklistCheck(userBlocklistStore: userBlocklistStore),
-            ])
-        }
-
-        // Seed Safeonweb archive brands once
-        if !UserDefaults.standard.bool(forKey: "safeonwebArchiveSeeded") {
-            try? campaignStore.seedArchiveBrands()
-            UserDefaults.standard.set(true, forKey: "safeonwebArchiveSeeded")
-        }
+        self.session = CoreSession()
+        session.seedAndStartUpdates()
 
         // One-time cleanup: remove brands incorrectly seeded into user_brands
         if !UserDefaults.standard.bool(forKey: "userBrandsSeedCleanup") {
-            try? userBrandStore.removeAll()
+            try? session.userBrandStore.removeAll()
             UserDefaults.standard.set(true, forKey: "userBrandsSeedCleanup")
         }
-
-        safeonwebUpdater.startPeriodicRefresh()
     }
 
     /// Discovers accounts from Mail.app and merges with saved activation state.
@@ -199,7 +156,7 @@ final class AccountManager: ObservableObject {
         guard let index = accounts.firstIndex(where: { $0.id == accountId }) else { return }
 
         let account = accounts[index]
-        let oauthProvider = account.oauthProvider!
+        guard let oauthProvider = account.oauthProvider else { return }
 
         do {
             let tokens = try await oauthManager.authenticate(provider: oauthProvider)
@@ -283,7 +240,7 @@ final class AccountManager: ObservableObject {
                 authMethod: account.usesOAuth ? .oauth2 : .password
             )
 
-            let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore, accountId: account.id)
+            let monitor = IMAPMonitor(account: config, analyzer: session.analyzer, verdictStore: verdictStore, accountId: account.id)
 
             do {
                 let result = try await monitor.scanInbox(count: count, credential: credential)
@@ -360,7 +317,7 @@ final class AccountManager: ObservableObject {
             authMethod: account.usesOAuth ? .oauth2 : .password
         )
 
-        let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore, accountId: account.id)
+        let monitor = IMAPMonitor(account: config, analyzer: session.analyzer, verdictStore: verdictStore, accountId: account.id)
 
         do {
             try await monitor.connectAndDelete(uid: uid, credential: credential)
@@ -387,7 +344,7 @@ final class AccountManager: ObservableObject {
             authMethod: accounts[index].usesOAuth ? .oauth2 : .password
         )
 
-        let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore, accountId: account.id)
+        let monitor = IMAPMonitor(account: config, analyzer: session.analyzer, verdictStore: verdictStore, accountId: account.id)
         monitors[accountId] = monitor
 
         do {
@@ -409,9 +366,8 @@ final class AccountManager: ObservableObject {
 
         if account.usesOAuth {
             // Try to load and refresh OAuth tokens
-            guard let refreshToken = KeychainHelper.loadRefreshToken(accountId: accountId) else { return }
-
-            let oauthProvider = account.oauthProvider!
+            guard let refreshToken = KeychainHelper.loadRefreshToken(accountId: accountId),
+                  let oauthProvider = account.oauthProvider else { return }
 
             accounts[index].status = .connecting
             do {

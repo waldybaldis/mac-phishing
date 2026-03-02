@@ -33,77 +33,36 @@ final class MobileAccountManager: ObservableObject {
     let oauthManager = OAuthManager()
 
     private var monitors: [UUID: IMAPMonitor] = [:]
-    private let analyzer: PhishingAnalyzer
-    let verdictStore: VerdictStore
-    let allowlistStore: AllowlistStore
-    let trustedLinkDomainStore: TrustedLinkDomainStore
-    let campaignStore: SafeonwebCampaignStore
-    let userBrandStore: UserBrandStore
-    let userBlocklistStore: UserBlocklistStore
-    let safeonwebUpdater: SafeonwebUpdater
-    private let dbManager: DatabaseManager?
+    let session: CoreSession
+
+    // Convenience accessors for stores
+    var verdictStore: VerdictStore { session.verdictStore }
+    var allowlistStore: AllowlistStore { session.allowlistStore }
+    var trustedLinkDomainStore: TrustedLinkDomainStore { session.trustedLinkDomainStore }
+    var campaignStore: SafeonwebCampaignStore { session.campaignStore }
+    var userBrandStore: UserBrandStore { session.userBrandStore }
+    var userBlocklistStore: UserBlocklistStore { session.userBlocklistStore }
+    var safeonwebUpdater: SafeonwebUpdater { session.safeonwebUpdater }
 
     private static let accountsKey = "mobileAccounts"
+    /// Number of recent emails to check during iOS background refresh (kept low for ~30s time budget).
+    private static let backgroundScanCount = 5
 
     init() {
-        let db = try? DatabaseManager(databasePath: Self.mobileDatabasePath())
-        self.dbManager = db
-        if let db = db {
-            let blacklistStore = BlacklistStore(database: db)
-            let allowlistStore = AllowlistStore(database: db)
-            let trustedLinkDomainStore = TrustedLinkDomainStore(database: db)
-            let campaignStore = SafeonwebCampaignStore(database: db)
-            let userBrandStore = UserBrandStore(database: db)
-            let userBlocklistStore = UserBlocklistStore(database: db)
-            self.verdictStore = VerdictStore(database: db)
-            self.allowlistStore = allowlistStore
-            self.trustedLinkDomainStore = trustedLinkDomainStore
-            self.campaignStore = campaignStore
-            self.userBrandStore = userBrandStore
-            self.userBlocklistStore = userBlocklistStore
-            self.safeonwebUpdater = SafeonwebUpdater(campaignStore: campaignStore)
-            self.analyzer = PhishingAnalyzer(blacklistStore: blacklistStore, allowlistStore: allowlistStore, trustedLinkDomainStore: trustedLinkDomainStore, campaignStore: campaignStore, userBrandStore: userBrandStore, userBlocklistStore: userBlocklistStore)
-        } else {
-            let memDb = try! DatabaseManager(databasePath: ":memory:")
-            let campaignStore = SafeonwebCampaignStore(database: memDb)
-            let userBrandStore = UserBrandStore(database: memDb)
-            let userBlocklistStore = UserBlocklistStore(database: memDb)
-            self.verdictStore = VerdictStore(database: memDb)
-            self.allowlistStore = AllowlistStore(database: memDb)
-            self.trustedLinkDomainStore = TrustedLinkDomainStore(database: memDb)
-            self.campaignStore = campaignStore
-            self.userBrandStore = userBrandStore
-            self.userBlocklistStore = userBlocklistStore
-            self.safeonwebUpdater = SafeonwebUpdater(campaignStore: campaignStore)
-            self.analyzer = PhishingAnalyzer(checks: [
-                AuthHeaderCheck(),
-                ReturnPathCheck(),
-                LinkMismatchCheck(trustedLinkDomainStore: self.trustedLinkDomainStore),
-                IPURLCheck(),
-                SuspiciousTLDCheck(),
-                BrandImpersonationCheck(campaignStore: campaignStore, userBrandStore: userBrandStore),
-                UserBlocklistCheck(userBlocklistStore: userBlocklistStore),
-            ])
-        }
-
-        // Seed Safeonweb archive brands once
-        if !UserDefaults.standard.bool(forKey: "safeonwebArchiveSeeded") {
-            try? campaignStore.seedArchiveBrands()
-            UserDefaults.standard.set(true, forKey: "safeonwebArchiveSeeded")
-        }
-
-        safeonwebUpdater.startPeriodicRefresh()
+        self.session = CoreSession(databasePath: Self.mobileDatabasePath())
+        session.seedAndStartUpdates()
         loadAccounts()
     }
 
     /// Database path for the iOS app group container.
     static func mobileDatabasePath() -> String {
         if let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.com.phishguard.mobile"
+            forSecurityApplicationGroupIdentifier: AppConstants.appGroupIdentifier
         ) {
             return containerURL.appendingPathComponent("verdicts.sqlite").path
         }
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
         let phishGuardDir = appSupport.appendingPathComponent("PhishGuard")
         return phishGuardDir.appendingPathComponent("verdicts.sqlite").path
     }
@@ -245,7 +204,7 @@ final class MobileAccountManager: ObservableObject {
             authMethod: account.authMethod
         )
 
-        let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore, accountId: account.id.uuidString)
+        let monitor = IMAPMonitor(account: config, analyzer: session.analyzer, verdictStore: verdictStore, accountId: account.id.uuidString)
 
         do {
             try await monitor.connectAndDelete(uid: uid, credential: credential)
@@ -285,7 +244,7 @@ final class MobileAccountManager: ObservableObject {
                 authMethod: account.authMethod
             )
 
-            let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore, accountId: account.id.uuidString)
+            let monitor = IMAPMonitor(account: config, analyzer: session.analyzer, verdictStore: verdictStore, accountId: account.id.uuidString)
 
             do {
                 let result = try await monitor.scanInbox(count: count, credential: credential)
@@ -328,11 +287,10 @@ final class MobileAccountManager: ObservableObject {
                 authMethod: account.authMethod
             )
 
-            let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore, accountId: account.id.uuidString)
+            let monitor = IMAPMonitor(account: config, analyzer: session.analyzer, verdictStore: verdictStore, accountId: account.id.uuidString)
 
             do {
-                // Fetch last 5 emails to check for new messages since last check
-                _ = try await monitor.scanInbox(count: 5, credential: credential)
+                _ = try await monitor.scanInbox(count: Self.backgroundScanCount, credential: credential)
             } catch {
                 logger.error("Background check failed for \(account.email): \(error.localizedDescription)")
             }
@@ -351,7 +309,7 @@ final class MobileAccountManager: ObservableObject {
             authMethod: account.authMethod
         )
 
-        let monitor = IMAPMonitor(account: config, analyzer: analyzer, verdictStore: verdictStore, accountId: account.id.uuidString)
+        let monitor = IMAPMonitor(account: config, analyzer: session.analyzer, verdictStore: verdictStore, accountId: account.id.uuidString)
         monitors[account.id] = monitor
 
         do {

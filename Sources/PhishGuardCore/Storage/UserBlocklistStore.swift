@@ -2,6 +2,8 @@ import Foundation
 import SQLite
 
 /// Manages the user's blocklist of sender domains they want flagged.
+/// @unchecked Sendable: only holds an immutable reference to DatabaseManager.
+/// Thread safety is provided by SQLite.swift's Connection (WAL mode + busyTimeout).
 public final class UserBlocklistStore: @unchecked Sendable {
     private let db: DatabaseManager
 

@@ -13,6 +13,9 @@ public struct Verdict: Sendable, Codable {
     public let subject: String
     public let receivedDate: Date
     public let imapUID: UInt32?
+    /// Platform-scoped account identifier. On macOS this is the Mail.app account name (String);
+    /// on iOS this is a UUID.uuidString. The two platforms use separate databases, so there is
+    /// no cross-platform collision, but the types are not interchangeable.
     public let accountId: String?
 
     public var threatLevel: ThreatLevel {
@@ -73,10 +76,12 @@ public enum ThreatLevel: String, Sendable, Codable {
     case phishing    // 6+
 
     public init(score: Int) {
-        switch score {
-        case 0...2: self = .clean
-        case 3...5: self = .suspicious
-        default:    self = .phishing
+        if score >= PhishGuardThresholds.phishing {
+            self = .phishing
+        } else if score >= PhishGuardThresholds.suspicious {
+            self = .suspicious
+        } else {
+            self = .clean
         }
     }
 

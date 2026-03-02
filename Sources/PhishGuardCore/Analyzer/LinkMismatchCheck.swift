@@ -56,7 +56,7 @@ public struct LinkMismatchCheck: PhishingCheck {
 
     public func analyze(email: ParsedEmail, context: AnalysisContext) -> [CheckResult] {
         var results: [CheckResult] = []
-        let senderBase = baseDomain(email.fromDomain)
+        let senderBase = DomainUtils.baseDomain(email.fromDomain)
 
         for link in context.links {
             // Only check links where display text looks like a URL
@@ -72,7 +72,7 @@ public struct LinkMismatchCheck: PhishingCheck {
             guard isValidDomain(hDomain), isValidDomain(dDomain) else { continue }
 
             // Skip if the href points to a known ESP tracking domain
-            let hBase = baseDomain(hDomain)
+            let hBase = DomainUtils.baseDomain(hDomain)
             if Self.espTrackingDomains.contains(hBase) { continue }
 
             // Skip if the user has marked this href domain as trusted
@@ -86,7 +86,7 @@ public struct LinkMismatchCheck: PhishingCheck {
             // Compare base (registrable) domains.
             // Subdomains of the same base domain are fine (e.g., ing.be vs mailing.ing.be).
             // Different TLDs are flagged (e.g., ing.be vs ing.com) since they could be different entities.
-            if hBase != baseDomain(dDomain) {
+            if hBase != DomainUtils.baseDomain(dDomain) {
                 results.append(CheckResult(
                     checkName: name,
                     points: 4,
@@ -139,19 +139,4 @@ public struct LinkMismatchCheck: PhishingCheck {
         }
     }
 
-    /// Extracts the base (registrable) domain from a full domain.
-    private func baseDomain(_ domain: String) -> String {
-        let parts = domain.split(separator: ".").map(String.init)
-        guard parts.count >= 2 else { return domain }
-
-        let twoPartTLDs = ["co.uk", "com.au", "co.nz", "co.za", "com.br", "co.jp", "co.in"]
-        if parts.count >= 3 {
-            let lastTwo = "\(parts[parts.count - 2]).\(parts[parts.count - 1])"
-            if twoPartTLDs.contains(lastTwo) {
-                return parts.suffix(3).joined(separator: ".")
-            }
-        }
-
-        return parts.suffix(2).joined(separator: ".")
-    }
 }

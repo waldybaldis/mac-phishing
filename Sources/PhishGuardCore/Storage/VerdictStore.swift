@@ -7,6 +7,8 @@ public extension Notification.Name {
 }
 
 /// Manages verdict CRUD operations in the shared database.
+/// @unchecked Sendable: only holds an immutable reference to DatabaseManager.
+/// Thread safety is provided by SQLite.swift's Connection (WAL mode + busyTimeout).
 public final class VerdictStore: @unchecked Sendable {
     private let db: DatabaseManager
 
@@ -35,7 +37,7 @@ public final class VerdictStore: @unchecked Sendable {
             )
         )
 
-        if verdict.score >= 3 {
+        if verdict.score >= PhishGuardThresholds.suspicious {
             NotificationCenter.default.post(name: .phishGuardNewAlert, object: verdict)
         }
     }

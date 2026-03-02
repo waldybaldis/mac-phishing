@@ -59,8 +59,10 @@ final class MessageActionHandler: NSObject, MEMessageActionHandler {
     // MARK: - Verdict Lookup
 
     private func lookupVerdict(messageId: String) -> StoredVerdict? {
+        // Mirrors AppConstants.appGroupIdentifier from PhishGuardCore — keep in sync
+        let appGroup = "group.com.phishguard"
         guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.com.phishguard"
+            forSecurityApplicationGroupIdentifier: appGroup
         ) else {
             logger.error("  App Group container not available")
             return nil
@@ -98,15 +100,18 @@ final class MessageActionHandler: NSObject, MEMessageActionHandler {
 
     // MARK: - Action Mapping
 
+    // Mirrors PhishGuardCore.PhishGuardThresholds — keep in sync
+    private static let suspiciousThreshold = 3
+    private static let phishingThreshold = 6
+
     private func actionForVerdict(_ verdict: StoredVerdict) -> MEMessageActionDecision? {
-        switch verdict.score {
-        case 6...:
+        if verdict.score >= Self.phishingThreshold {
             // High threat — move to junk
             return .action(.moveToJunk)
-        case 3...5:
+        } else if verdict.score >= Self.suspiciousThreshold {
             // Suspicious — flag with orange color
             return .action(.flag(.orange))
-        default:
+        } else {
             return nil
         }
     }

@@ -18,8 +18,8 @@ public struct ReturnPathCheck: PhishingCheck {
         guard !fromDomain.isEmpty else { return [] }
 
         // Compare base domains (handles subdomains)
-        let fromBase = baseDomain(fromDomain)
-        let rpBase = baseDomain(rpDomain)
+        let fromBase = DomainUtils.baseDomain(fromDomain)
+        let rpBase = DomainUtils.baseDomain(rpDomain)
 
         if fromBase != rpBase {
             return [CheckResult(
@@ -30,23 +30,5 @@ public struct ReturnPathCheck: PhishingCheck {
         }
 
         return []
-    }
-
-    /// Extracts the base domain (registrable domain) from a full domain.
-    /// Simple heuristic: takes last two components (or three for known ccTLDs).
-    private func baseDomain(_ domain: String) -> String {
-        let parts = domain.split(separator: ".").map(String.init)
-        guard parts.count >= 2 else { return domain }
-
-        // Common two-part TLDs
-        let twoPartTLDs = ["co.uk", "com.au", "co.nz", "co.za", "com.br", "co.jp", "co.in"]
-        if parts.count >= 3 {
-            let lastTwo = "\(parts[parts.count - 2]).\(parts[parts.count - 1])"
-            if twoPartTLDs.contains(lastTwo) {
-                return parts.suffix(3).joined(separator: ".")
-            }
-        }
-
-        return parts.suffix(2).joined(separator: ".")
     }
 }

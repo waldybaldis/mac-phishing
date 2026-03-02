@@ -2,6 +2,7 @@ import Foundation
 
 /// The main phishing analysis engine. Runs all configured checks against an email
 /// and produces a scored verdict.
+/// @unchecked Sendable: all state (checks array, allowlistStore) is immutable after init.
 public final class PhishingAnalyzer: @unchecked Sendable {
     private let checks: [PhishingCheck]
     private let allowlistStore: AllowlistStore?

@@ -3,6 +3,8 @@ import SQLite
 
 /// Manages user-trusted link domains. When a user marks a link mismatch alert as safe,
 /// the href domain is added here so LinkMismatchCheck skips it in future analysis.
+/// @unchecked Sendable: only holds an immutable reference to DatabaseManager.
+/// Thread safety is provided by SQLite.swift's Connection (WAL mode + busyTimeout).
 public final class TrustedLinkDomainStore: @unchecked Sendable {
     private let db: DatabaseManager
 

@@ -12,8 +12,8 @@ struct SettingsView: View {
     @State private var showLinkSheet = false
     @State private var blockedDomainCount: Int = 0
     @State private var showBlockedSheet = false
-    @State private var blacklistCount = 48231
-    @State private var lastUpdated = Date().addingTimeInterval(-3600)
+    @State private var blacklistCount = 0
+    @State private var lastUpdated: Date?
     @State private var userBrandCount = 0
     @State private var showUserBrandSheet = false
     @State private var safeonwebBrandCount = 0
@@ -125,13 +125,15 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(blacklistCount.formatted()) domains")
                             .font(.caption)
-                        Text("Updated \(lastUpdated, style: .relative) ago")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                        if let lastUpdated {
+                            Text("Updated \(lastUpdated, style: .relative) ago")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
                     }
                     Spacer()
                     Button("Refresh") {
-                        // Trigger blacklist update
+                        refreshBlacklistCounts()
                     }
                     .controlSize(.small)
                     .buttonStyle(.bordered)
@@ -271,6 +273,13 @@ struct SettingsView: View {
         senderDomainCount = (try? mgr.allowlistStore.allDomains().count) ?? 0
         linkDomainCount = (try? mgr.trustedLinkDomainStore.count()) ?? 0
         blockedDomainCount = (try? mgr.userBlocklistStore.allDomains().count) ?? 0
+        refreshBlacklistCounts()
+    }
+
+    private func refreshBlacklistCounts() {
+        guard let mgr = accountManager else { return }
+        blacklistCount = (try? mgr.blacklistStore.count()) ?? 0
+        lastUpdated = try? mgr.blacklistStore.lastUpdated(source: "phishtank")
     }
 
     private func refreshBrandCounts() {

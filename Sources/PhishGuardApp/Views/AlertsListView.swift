@@ -64,54 +64,31 @@ struct AlertsListView: View {
     }
 
     private func markSafe(_ verdict: Verdict) {
-        // Add sender domain to allowlist so future emails from this sender skip analysis
-        let senderDomain = ParsedEmail.extractDomain(from: verdict.from) ?? ""
-        if !senderDomain.isEmpty {
-            try? accountManager.allowlistStore.add(domain: senderDomain)
-            // Mark all existing verdicts from this domain as safe too
-            _ = try? accountManager.verdictStore.markDomainSafe(domain: senderDomain)
-        }
-
-        // Extract href domains from link mismatch reasons and add to trusted link domains
-        for reason in verdict.reasons where reason.checkName == "Link Text vs URL Mismatch Check" {
-            if let hrefDomain = extractHrefDomain(from: reason.reason) {
-                try? accountManager.trustedLinkDomainStore.add(domain: hrefDomain)
-            }
-        }
-
-        // Refresh the full list so other alerts from the same sender disappear
-        withAnimation {
-            refresh()
-        }
+        let service = VerdictActionService(
+            verdictStore: accountManager.verdictStore,
+            allowlistStore: accountManager.allowlistStore,
+            trustedLinkDomainStore: accountManager.trustedLinkDomainStore,
+            userBlocklistStore: accountManager.userBlocklistStore
+        )
+        service.markSafe(verdict)
+        withAnimation { refresh() }
     }
 
     private func blockSender(_ verdict: Verdict) {
-        let senderDomain = ParsedEmail.extractDomain(from: verdict.from) ?? ""
-        guard !senderDomain.isEmpty else { return }
-        try? accountManager.userBlocklistStore.add(domain: senderDomain)
-        // Also remove from allowlist if present
-        try? accountManager.allowlistStore.remove(domain: senderDomain)
+        let service = VerdictActionService(
+            verdictStore: accountManager.verdictStore,
+            allowlistStore: accountManager.allowlistStore,
+            trustedLinkDomainStore: accountManager.trustedLinkDomainStore,
+            userBlocklistStore: accountManager.userBlocklistStore
+        )
+        service.blockSender(verdict)
         deleteVerdict(verdict)
     }
 
-    /// Resolves a verdict's accountId to the mailbox display name.
     private func accountLabel(for verdict: Verdict) -> String? {
         guard let id = verdict.accountId,
               let account = accountManager.accounts.first(where: { $0.id == id }) else { return nil }
         return account.discovered.name
-    }
-
-    /// Extracts the href domain from a link mismatch reason string.
-    /// Expected format: `Link displays "X" but actually points to "Y"`
-    private func extractHrefDomain(from reason: String) -> String? {
-        guard let range = reason.range(of: "points to \"") else { return nil }
-        let after = reason[range.upperBound...]
-        guard let endQuote = after.firstIndex(of: "\"") else { return nil }
-        let domain = String(after[after.startIndex..<endQuote])
-        // Extract base domain (take last 2 parts)
-        let parts = domain.split(separator: ".").map(String.init)
-        guard parts.count >= 2 else { return nil }
-        return parts.suffix(2).joined(separator: ".")
     }
 }
 
@@ -224,15 +201,15 @@ struct AlertRow: View {
     }
 
     private var threatColor: Color {
-        switch verdict.score {
-        case 0...2: return .green
-        case 3...5: return .orange
-        default: return .red
+        switch verdict.threatLevel {
+        case .clean: return .green
+        case .suspicious: return .orange
+        case .phishing: return .red
         }
     }
 
     private var reasonColor: Color {
-        verdict.score >= 6 ? .red : .orange
+        verdict.threatLevel == .phishing ? .red : .orange
     }
 
     private var formattedDate: String {

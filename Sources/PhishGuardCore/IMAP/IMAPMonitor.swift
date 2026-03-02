@@ -19,6 +19,9 @@ public enum IMAPCredential: Sendable {
 }
 
 /// Monitors an IMAP mailbox for new emails using IDLE.
+/// @unchecked Sendable: mutable state (state, monitorTask, server, idleSession) is
+/// protected by stateLock. Background tasks only read immutable config and call
+/// thread-safe stores.
 public final class IMAPMonitor: @unchecked Sendable {
     public enum State: Sendable {
         case disconnected
@@ -48,10 +51,16 @@ public final class IMAPMonitor: @unchecked Sendable {
     private let analyzer: PhishingAnalyzer
     private let verdictStore: VerdictStore
     private let accountId: String?
-    private var state: State = .disconnected
+    private let stateLock = NSLock()
+    private var _state: State = .disconnected
     private var monitorTask: Task<Void, Never>?
     private var server: IMAPServer?
     private var idleSession: IMAPIdleSession?
+
+    private var state: State {
+        get { stateLock.withLock { _state } }
+        set { stateLock.withLock { _state = newValue } }
+    }
 
     public init(account: AccountConfig, analyzer: PhishingAnalyzer, verdictStore: VerdictStore, accountId: String? = nil) {
         self.account = account
@@ -238,7 +247,11 @@ public final class IMAPMonitor: @unchecked Sendable {
     /// Processes a new email: analyze it and store the verdict.
     public func processNewEmail(_ email: ParsedEmail, imapUID: UInt32? = nil) {
         let verdict = analyzer.analyze(email: email, imapUID: imapUID, accountId: accountId)
-        try? verdictStore.save(verdict)
+        do {
+            try verdictStore.save(verdict)
+        } catch {
+            logger.error("Failed to save verdict for \(email.messageId): \(error.localizedDescription)")
+        }
         delegate?.imapMonitor(self, didReceiveEmail: email)
     }
 
@@ -298,10 +311,11 @@ public final class IMAPMonitor: @unchecked Sendable {
         public let storageTime: TimeInterval
         public let totalTime: TimeInterval
         public let skippedParts: Int
+        public let saveFailures: Int
 
         public init(emailCount: Int, fetchInfoTime: TimeInterval, fetchBodiesTime: TimeInterval,
                     fetchHeadersTime: TimeInterval, analysisTime: TimeInterval, storageTime: TimeInterval,
-                    totalTime: TimeInterval, skippedParts: Int) {
+                    totalTime: TimeInterval, skippedParts: Int, saveFailures: Int = 0) {
             self.emailCount = emailCount
             self.fetchInfoTime = fetchInfoTime
             self.fetchBodiesTime = fetchBodiesTime
@@ -310,6 +324,7 @@ public final class IMAPMonitor: @unchecked Sendable {
             self.storageTime = storageTime
             self.totalTime = totalTime
             self.skippedParts = skippedParts
+            self.saveFailures = saveFailures
         }
     }
 
@@ -524,10 +539,19 @@ public final class IMAPMonitor: @unchecked Sendable {
 
         // Phase 5: Store verdicts
         let p5Start = CFAbsoluteTimeGetCurrent()
+        var saveFailures = 0
         for verdict in verdicts {
-            try? verdictStore.save(verdict)
+            do {
+                try verdictStore.save(verdict)
+            } catch {
+                saveFailures += 1
+                logger.error("Failed to save verdict for \(verdict.messageId): \(error.localizedDescription)")
+            }
         }
         let p5Time = CFAbsoluteTimeGetCurrent() - p5Start
+        if saveFailures > 0 {
+            logger.warning("Scan: \(saveFailures) verdict(s) failed to save")
+        }
 
         // Cleanup
         try? await benchServer.logout()
@@ -559,7 +583,8 @@ public final class IMAPMonitor: @unchecked Sendable {
             analysisTime: p4Time,
             storageTime: p5Time,
             totalTime: totalTime,
-            skippedParts: skippedParts
+            skippedParts: skippedParts,
+            saveFailures: saveFailures
         )
     }
 

@@ -2,6 +2,8 @@ import Foundation
 import SQLite
 
 /// Manages Safeonweb active phishing campaign brands in the shared database.
+/// @unchecked Sendable: only holds an immutable reference to DatabaseManager.
+/// Thread safety is provided by SQLite.swift's Connection (WAL mode + busyTimeout).
 public final class SafeonwebCampaignStore: @unchecked Sendable {
     private let db: DatabaseManager
 

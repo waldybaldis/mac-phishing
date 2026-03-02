@@ -74,27 +74,24 @@ struct AlertsView: View {
     }
 
     private func markSafe(_ verdict: Verdict) {
-        let senderDomain = ParsedEmail.extractDomain(from: verdict.from) ?? ""
-        if !senderDomain.isEmpty {
-            try? accountManager.allowlistStore.add(domain: senderDomain)
-            _ = try? accountManager.verdictStore.markDomainSafe(domain: senderDomain)
-        }
-
-        for reason in verdict.reasons where reason.checkName == "Link Text vs URL Mismatch Check" {
-            if let hrefDomain = extractHrefDomain(from: reason.reason) {
-                try? accountManager.trustedLinkDomainStore.add(domain: hrefDomain)
-            }
-        }
-
+        let service = VerdictActionService(
+            verdictStore: accountManager.verdictStore,
+            allowlistStore: accountManager.allowlistStore,
+            trustedLinkDomainStore: accountManager.trustedLinkDomainStore,
+            userBlocklistStore: accountManager.userBlocklistStore
+        )
+        service.markSafe(verdict)
         withAnimation { refresh() }
     }
 
     private func blockSender(_ verdict: Verdict) {
-        let senderDomain = ParsedEmail.extractDomain(from: verdict.from) ?? ""
-        guard !senderDomain.isEmpty else { return }
-        try? accountManager.userBlocklistStore.add(domain: senderDomain)
-        // Also remove from allowlist if present
-        try? accountManager.allowlistStore.remove(domain: senderDomain)
+        let service = VerdictActionService(
+            verdictStore: accountManager.verdictStore,
+            allowlistStore: accountManager.allowlistStore,
+            trustedLinkDomainStore: accountManager.trustedLinkDomainStore,
+            userBlocklistStore: accountManager.userBlocklistStore
+        )
+        service.blockSender(verdict)
         deleteVerdict(verdict)
     }
 
@@ -103,16 +100,6 @@ struct AlertsView: View {
               let uuid = UUID(uuidString: id),
               let account = accountManager.accounts.first(where: { $0.id == uuid }) else { return nil }
         return account.displayName
-    }
-
-    private func extractHrefDomain(from reason: String) -> String? {
-        guard let range = reason.range(of: "points to \"") else { return nil }
-        let after = reason[range.upperBound...]
-        guard let endQuote = after.firstIndex(of: "\"") else { return nil }
-        let domain = String(after[after.startIndex..<endQuote])
-        let parts = domain.split(separator: ".").map(String.init)
-        guard parts.count >= 2 else { return nil }
-        return parts.suffix(2).joined(separator: ".")
     }
 }
 
@@ -162,7 +149,7 @@ struct MobileAlertRow: View {
             if let topReason = verdict.reasons.first {
                 Label(topReason.reason, systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
-                    .foregroundStyle(verdict.score >= 6 ? .red : .orange)
+                    .foregroundStyle(verdict.threatLevel == .phishing ? .red : .orange)
                     .lineLimit(2)
             }
 
@@ -208,10 +195,10 @@ struct MobileAlertRow: View {
     }
 
     private var threatColor: Color {
-        switch verdict.score {
-        case 0...2: return .green
-        case 3...5: return .orange
-        default: return .red
+        switch verdict.threatLevel {
+        case .clean: return .green
+        case .suspicious: return .orange
+        case .phishing: return .red
         }
     }
 
