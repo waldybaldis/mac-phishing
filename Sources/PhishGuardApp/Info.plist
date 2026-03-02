@@ -13,24 +13,31 @@
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
-	<string>XPC!</string>
+	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0.1</string>
 	<key>CFBundleVersion</key>
 	<string>2</string>
-	<key>EXAppExtensionAttributes</key>
-	<dict>
-		<key>EXExtensionPointIdentifier</key>
-		<string>com.apple.email.extension</string>
-		<key>EXExtensionPrincipalClass</key>
-		<string>$(PRODUCT_MODULE_NAME).PhishGuardMailExtension</string>
-		<key>EXExtensionAttributes</key>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>PhishGuard needs access to Mail to discover your email accounts.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
 		<dict>
-			<key>MEExtensionCapabilities</key>
+			<key>CFBundleURLName</key>
+			<string>Google OAuth</string>
+			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>MEMessageActionHandler</string>
+				<string>com.googleusercontent.apps.939583452676-u9cfv3n0hoqd1s1fkvnqrgm9jg8k4dai</string>
 			</array>
 		</dict>
-	</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Microsoft OAuth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>msauth.com.phishguard.app</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
