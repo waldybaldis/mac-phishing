@@ -77,7 +77,7 @@ struct AlertsView: View {
         let senderDomain = ParsedEmail.extractDomain(from: verdict.from) ?? ""
         if !senderDomain.isEmpty {
             try? accountManager.allowlistStore.add(domain: senderDomain)
-            try? accountManager.verdictStore.markDomainSafe(domain: senderDomain)
+            _ = try? accountManager.verdictStore.markDomainSafe(domain: senderDomain)
         }
 
         for reason in verdict.reasons where reason.checkName == "Link Text vs URL Mismatch Check" {

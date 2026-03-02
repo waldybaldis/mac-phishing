@@ -51,7 +51,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func startAlertPolling() {
         alertTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
-            self?.updateStatusIcon()
+            Task { @MainActor in
+                self?.updateStatusIcon()
+            }
         }
         updateStatusIcon()
     }
@@ -90,8 +92,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             queue: .main
         ) { [weak self] notification in
             guard let verdict = notification.object as? Verdict else { return }
-            self?.sendUserNotification(for: verdict)
-            self?.updateStatusIcon()
+            Task { @MainActor in
+                self?.sendUserNotification(for: verdict)
+                self?.updateStatusIcon()
+            }
         }
     }
 

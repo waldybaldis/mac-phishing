@@ -20,7 +20,7 @@ final class MessageActionHandler: NSObject, MEMessageActionHandler {
 
     /// Decides what action to take for a message.
     func decideAction(for message: MEMessage, completionHandler: @escaping @Sendable (MEMessageActionDecision?) -> Void) {
-        logger.info("decideAction called for subject: \(message.subject ?? "nil", privacy: .public)")
+        logger.info("decideAction called for subject: \(message.subject, privacy: .public)")
         logger.info("  headers: \(String(describing: message.headers), privacy: .public)")
 
         guard let messageId = extractMessageId(from: message) else {

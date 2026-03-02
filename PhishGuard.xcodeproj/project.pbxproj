@@ -937,6 +937,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/PhishGuardApp/PhishGuard.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = Sources/PhishGuardApp/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -997,6 +998,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/PhishGuardApp/PhishGuard.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = Sources/PhishGuardApp/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

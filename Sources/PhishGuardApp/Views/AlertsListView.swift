@@ -69,7 +69,7 @@ struct AlertsListView: View {
         if !senderDomain.isEmpty {
             try? accountManager.allowlistStore.add(domain: senderDomain)
             // Mark all existing verdicts from this domain as safe too
-            try? accountManager.verdictStore.markDomainSafe(domain: senderDomain)
+            _ = try? accountManager.verdictStore.markDomainSafe(domain: senderDomain)
         }
 
         // Extract href domains from link mismatch reasons and add to trusted link domains

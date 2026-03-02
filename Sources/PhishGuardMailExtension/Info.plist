@@ -22,14 +22,9 @@
 	<dict>
 		<key>EXExtensionPointIdentifier</key>
 		<string>com.apple.email.extension</string>
-	</dict>
-	<key>NSExtension</key>
-	<dict>
-		<key>NSExtensionPointIdentifier</key>
-		<string>com.apple.email.extension</string>
-		<key>NSExtensionPrincipalClass</key>
+		<key>EXExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).PhishGuardMailExtension</string>
-		<key>NSExtensionAttributes</key>
+		<key>EXExtensionAttributes</key>
 		<dict>
 			<key>MEExtensionCapabilities</key>
 			<array>

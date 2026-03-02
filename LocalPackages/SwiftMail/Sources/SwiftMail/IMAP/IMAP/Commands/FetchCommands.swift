@@ -114,7 +114,7 @@ struct FetchRawMessageCommand<T: MessageIdentifier>: IMAPTaggedCommand {
     let identifier: T
 
     /// Custom timeout for this operation
-    var timeoutSeconds: Int { return 10 }
+    var timeoutSeconds: Int { return 30 }
 
     /// Initialize a new fetch raw message command
     /// - Parameter identifier: The message identifier to fetch
@@ -147,12 +147,12 @@ struct FetchRawMessageCommand<T: MessageIdentifier>: IMAPTaggedCommand {
  struct FetchStructureCommand<T: MessageIdentifier>: IMAPTaggedCommand {
     typealias ResultType = [MessagePart]
     typealias HandlerType = FetchStructureHandler
-    
+
     /// The message identifier to fetch
     let identifier: T
-    
+
     /// Custom timeout for this operation
-    var timeoutSeconds: Int { return 10 }
+    var timeoutSeconds: Int { return 30 }
     
     /// Initialize a new fetch structure command
     /// - Parameter identifier: The message identifier to fetch
