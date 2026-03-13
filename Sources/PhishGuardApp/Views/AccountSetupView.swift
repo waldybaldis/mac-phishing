@@ -150,8 +150,8 @@ struct AccountRowView: View {
             // Expanded section
             if isExpanded {
                 VStack(alignment: .leading, spacing: 8) {
-                    if account.isActivated {
-                        // Already activated — show deactivate
+                    if account.isActivated && account.status == .monitoring {
+                        // Connected and monitoring — show deactivate only
                         HStack {
                             Spacer()
                             Button("Deactivate") {
@@ -160,6 +160,24 @@ struct AccountRowView: View {
                             }
                             .font(.caption)
                             .foregroundStyle(.red)
+                        }
+                    } else if account.isActivated {
+                        // Activated but not connected — show re-auth UI + deactivate
+                        VStack(alignment: .leading, spacing: 8) {
+                            if account.usesOAuth {
+                                oauthActivationView
+                            } else {
+                                passwordActivationView
+                            }
+                            HStack {
+                                Spacer()
+                                Button("Deactivate") {
+                                    onDeactivate()
+                                    password = ""
+                                }
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                            }
                         }
                     } else if account.usesOAuth {
                         // OAuth provider — show sign-in button

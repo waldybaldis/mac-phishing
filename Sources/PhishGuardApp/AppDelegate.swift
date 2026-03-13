@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupMenuBar()
         startAlertPolling()
         setupNotifications()
+        Task { await accountManager.discoverAccounts() }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -76,11 +77,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let redCount = (try? accountManager.verdictStore.alertCount(minimumScore: PhishGuardThresholds.phishing)) ?? 0
         let orangeCount = (try? accountManager.verdictStore.alertCount(minimumScore: effectiveThreshold)) ?? 0
 
-        if redCount > 0 {
+        let hasActivatedAccounts = accountManager.accounts.contains(where: \.isActivated)
+        let hasErrors = accountManager.accounts.contains(where: { $0.isActivated && $0.status != .monitoring && $0.status != .connecting && $0.status != .notMonitored })
+
+        if redCount > 0 || hasErrors || (hasActivatedAccounts && !accountManager.isAnyMonitoring) {
             let config = NSImage.SymbolConfiguration(paletteColors: [.systemRed])
             button.image = NSImage(systemSymbolName: "shield.checkered", accessibilityDescription: "PhishGuard — alerts")?
                 .withSymbolConfiguration(config)
-        } else if orangeCount > 0 {
+        } else if orangeCount > 0 || !hasActivatedAccounts {
             let config = NSImage.SymbolConfiguration(paletteColors: [.systemOrange])
             button.image = NSImage(systemSymbolName: "shield.checkered", accessibilityDescription: "PhishGuard — warnings")?
                 .withSymbolConfiguration(config)

@@ -149,6 +149,18 @@ final class AccountManager: ObservableObject {
         KeychainHelper.savePassword(accountId: accountId, password: password)
 
         await startMonitor(accountId: accountId, credential: .password(password))
+
+        // Initial scan: check last 100 emails on first activation
+        if let monitor = monitors[accountId] {
+            Task {
+                do {
+                    let result = try await monitor.scanInbox(count: 100, credential: .password(password))
+                    logger.info("Initial scan for \(account.email): \(result.emailCount) emails in \(String(format: "%.2f", result.totalTime))s")
+                } catch {
+                    logger.error("Initial scan failed for \(account.email): \(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     /// Activates monitoring for an account using OAuth2 authentication.
@@ -174,6 +186,18 @@ final class AccountManager: ObservableObject {
 
             let email = account.discovered.email
             await startMonitor(accountId: accountId, credential: .oauth2(email: email, accessToken: tokens.accessToken))
+
+            // Initial scan: check last 100 emails on first activation
+            if let monitor = monitors[accountId] {
+                Task {
+                    do {
+                        let result = try await monitor.scanInbox(count: 100, credential: .oauth2(email: email, accessToken: tokens.accessToken))
+                        logger.info("Initial scan for \(email): \(result.emailCount) emails in \(String(format: "%.2f", result.totalTime))s")
+                    } catch {
+                        logger.error("Initial scan failed for \(email): \(error.localizedDescription)")
+                    }
+                }
+            }
         } catch {
             if let idx = accounts.firstIndex(where: { $0.id == accountId }) {
                 if case OAuthError.userCancelled = error {

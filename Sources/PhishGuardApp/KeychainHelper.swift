@@ -2,41 +2,20 @@ import Foundation
 import Security
 
 /// Simple wrapper around the macOS Keychain for storing credentials.
+/// All credentials are stored in a single Keychain item as a JSON dictionary
+/// so that only one password prompt is needed on app launch.
 enum KeychainHelper {
 
     private static let service = "com.phishguard.app"
+    private static let vaultKey = "credentials"
 
-    /// Saves data to the Keychain under the given key.
-    @discardableResult
-    static func save(key: String, data: Data) -> Bool {
-        // Delete any existing item first
-        delete(key: key)
+    // MARK: - Vault (single Keychain item holding all credentials)
 
+    private static func loadVault() -> [String: String] {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
-        ]
-
-        let status = SecItemAdd(query as CFDictionary, nil)
-        return status == errSecSuccess
-    }
-
-    /// Saves a string to the Keychain.
-    @discardableResult
-    static func save(key: String, string: String) -> Bool {
-        guard let data = string.data(using: .utf8) else { return false }
-        return save(key: key, data: data)
-    }
-
-    /// Loads data from the Keychain for the given key.
-    static func load(key: String) -> Data? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
+            kSecAttrAccount as String: vaultKey,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
@@ -44,36 +23,78 @@ enum KeychainHelper {
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
 
-        guard status == errSecSuccess else { return nil }
-        return result as? Data
+        guard status == errSecSuccess,
+              let data = result as? Data,
+              let dict = try? JSONDecoder().decode([String: String].self, from: data) else {
+            return [:]
+        }
+        return dict
     }
 
-    /// Loads a string from the Keychain.
-    static func loadString(key: String) -> String? {
-        guard let data = load(key: key) else { return nil }
-        return String(data: data, encoding: .utf8)
-    }
+    private static func saveVault(_ vault: [String: String]) {
+        guard let data = try? JSONEncoder().encode(vault) else { return }
 
-    /// Deletes an item from the Keychain.
-    @discardableResult
-    static func delete(key: String) -> Bool {
-        let query: [String: Any] = [
+        // Delete existing item first
+        let deleteQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
+            kSecAttrAccount as String: vaultKey,
         ]
+        SecItemDelete(deleteQuery as CFDictionary)
 
-        let status = SecItemDelete(query as CFDictionary)
-        return status == errSecSuccess || status == errSecItemNotFound
+        let addQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: vaultKey,
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
+        ]
+        SecItemAdd(addQuery as CFDictionary, nil)
+    }
+
+    // MARK: - Public API (unchanged interface)
+
+    @discardableResult
+    static func save(key: String, data: Data) -> Bool {
+        guard let string = String(data: data, encoding: .utf8) else { return false }
+        return save(key: key, string: string)
+    }
+
+    @discardableResult
+    static func save(key: String, string: String) -> Bool {
+        var vault = loadVault()
+        vault[key] = string
+        saveVault(vault)
+        return true
+    }
+
+    static func load(key: String) -> Data? {
+        guard let string = loadString(key: key) else { return nil }
+        return string.data(using: .utf8)
+    }
+
+    static func loadString(key: String) -> String? {
+        let vault = loadVault()
+        return vault[key]
+    }
+
+    @discardableResult
+    static func delete(key: String) -> Bool {
+        var vault = loadVault()
+        vault.removeValue(forKey: key)
+        saveVault(vault)
+        return true
     }
 
     // MARK: - Convenience for OAuth tokens
 
     static func saveTokens(accountId: String, accessToken: String, refreshToken: String?) {
-        save(key: "\(accountId).accessToken", string: accessToken)
+        var vault = loadVault()
+        vault["\(accountId).accessToken"] = accessToken
         if let refreshToken = refreshToken {
-            save(key: "\(accountId).refreshToken", string: refreshToken)
+            vault["\(accountId).refreshToken"] = refreshToken
         }
+        saveVault(vault)
     }
 
     static func loadAccessToken(accountId: String) -> String? {
@@ -93,8 +114,10 @@ enum KeychainHelper {
     }
 
     static func deleteCredentials(accountId: String) {
-        delete(key: "\(accountId).accessToken")
-        delete(key: "\(accountId).refreshToken")
-        delete(key: "\(accountId).password")
+        var vault = loadVault()
+        vault.removeValue(forKey: "\(accountId).accessToken")
+        vault.removeValue(forKey: "\(accountId).refreshToken")
+        vault.removeValue(forKey: "\(accountId).password")
+        saveVault(vault)
     }
 }
