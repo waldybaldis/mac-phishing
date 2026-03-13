@@ -80,7 +80,6 @@ targets:
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.utilities"
     dependencies:
       - target: PhishGuardCore
-      - target: PhishGuardMailExtension
 
   PhishGuardMobile:
     type: application
@@ -114,23 +113,6 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Sources/PhishGuardMobile/PhishGuardMobile.entitlements
     dependencies:
       - target: PhishGuardCore
-
-  PhishGuardMailExtension:
-    type: app-extension
-    platform: macOS
-    sources:
-      - Sources/PhishGuardMailExtension
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.phishguard.app.mail-extension
-        CODE_SIGN_ENTITLEMENTS: Sources/PhishGuardMailExtension/PhishGuardMailExtension.entitlements
-        INFOPLIST_FILE: Sources/PhishGuardMailExtension/Info.plist
-    dependencies:
-      - target: PhishGuardCore
-      - package: SQLiteSwift
-        product: SQLite
-      - sdk: MailKit.framework
-        embed: false
 
   PhishGuardCoreTests:
     type: bundle.unit-test

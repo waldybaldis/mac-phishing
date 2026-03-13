@@ -57,7 +57,7 @@ final class MobileAccountManager: ObservableObject {
     /// Database path for the iOS app group container.
     static func mobileDatabasePath() -> String {
         if let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: AppConstants.appGroupIdentifier
+            forSecurityApplicationGroupIdentifier: "group.com.phishguard.mobile"
         ) {
             return containerURL.appendingPathComponent("verdicts.sqlite").path
         }

@@ -162,7 +162,7 @@ public final class IMAPMonitor: @unchecked Sendable {
             let headers = await extractHeaders(server: server, messageInfo: messageInfo)
 
             let email = ParsedEmail(
-                messageId: messageInfo.messageId ?? UUID().uuidString,
+                messageId: messageInfo.messageId?.description ?? UUID().uuidString,
                 from: messageInfo.from ?? "",
                 returnPath: headers["Return-Path"],
                 authenticationResults: headers["Authentication-Results"],
@@ -521,7 +521,7 @@ public final class IMAPMonitor: @unchecked Sendable {
             let headers = allHeaders[idx] ?? [:]
 
             let email = ParsedEmail(
-                messageId: info.messageId ?? UUID().uuidString,
+                messageId: info.messageId?.description ?? UUID().uuidString,
                 from: info.from ?? "",
                 returnPath: headers["Return-Path"],
                 authenticationResults: headers["Authentication-Results"],
