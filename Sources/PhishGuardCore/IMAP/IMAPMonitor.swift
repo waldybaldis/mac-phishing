@@ -612,6 +612,156 @@ public final class IMAPMonitor: @unchecked Sendable {
         )
     }
 
+    /// Scans only unseen (unread) messages in the inbox.
+    /// Uses IMAP SEARCH UNSEEN to find unread messages, then analyzes them.
+    public func scanUnseen(credential: IMAPCredential) async throws -> ScanResult {
+        let benchServer = IMAPServer(host: account.imapServer, port: account.imapPort)
+        let totalStart = CFAbsoluteTimeGetCurrent()
+
+        try await benchServer.connect()
+        switch credential {
+        case .password(let password):
+            try await benchServer.login(username: account.username, password: password)
+        case .oauth2(let email, let accessToken):
+            try await benchServer.authenticateXOAUTH2(email: email, accessToken: accessToken)
+        }
+
+        try await benchServer.selectMailbox("INBOX")
+
+        // Search for unseen messages
+        let unseenUIDs: MessageIdentifierSet<UID> = try await benchServer.search(criteria: [.unseen])
+        guard !unseenUIDs.isEmpty else {
+            try? await benchServer.logout()
+            try? await benchServer.disconnect()
+            return ScanResult(
+                emailCount: 0, fetchInfoTime: 0, fetchBodiesTime: 0,
+                fetchHeadersTime: 0, analysisTime: 0, storageTime: 0,
+                totalTime: CFAbsoluteTimeGetCurrent() - totalStart, skippedParts: 0
+            )
+        }
+
+        logger.info("Unseen scan: found \(unseenUIDs.count) unread messages")
+
+        // Reuse the same pipeline as scanInbox but with UID set
+        let p1Start = CFAbsoluteTimeGetCurrent()
+        let messageInfos = try await benchServer.fetchMessageInfosBulk(using: unseenUIDs)
+        let p1Time = CFAbsoluteTimeGetCurrent() - p1Start
+
+        // Single connection for unseen scan (typically few messages)
+        var skippedParts = 0
+        let p2Start = CFAbsoluteTimeGetCurrent()
+        var textBodies: [Int: (html: String?, text: String?)] = [:]
+        for (idx, info) in messageInfos.enumerated() {
+            var html: String?
+            var text: String?
+            let identifier = info.sequenceNumber
+
+            var htmlPart: MessagePart?
+            var textPart: MessagePart?
+            for part in info.parts {
+                let ct = part.contentType.lowercased()
+                if ct.hasPrefix("text/html") && htmlPart == nil {
+                    htmlPart = part
+                } else if ct.hasPrefix("text/plain") && textPart == nil {
+                    textPart = part
+                } else {
+                    skippedParts += 1
+                }
+            }
+
+            if let part = htmlPart {
+                if let rawData = try? await benchServer.fetchPart(section: part.section, of: identifier) {
+                    let decoded = rawData.decoded(for: part)
+                    html = String(data: decoded, encoding: .utf8)
+                }
+            }
+            if html == nil, let part = textPart {
+                if let rawData = try? await benchServer.fetchPart(section: part.section, of: identifier) {
+                    let decoded = rawData.decoded(for: part)
+                    text = String(data: decoded, encoding: .utf8)
+                }
+            } else if textPart != nil {
+                skippedParts += 1
+            }
+            if info.parts.isEmpty {
+                let message = try? await benchServer.fetchMessage(from: info)
+                html = message?.htmlBody
+                text = message?.textBody
+            }
+            textBodies[idx] = (html: html, text: text)
+        }
+        let p2Time = CFAbsoluteTimeGetCurrent() - p2Start
+
+        // Headers
+        let p3Start = CFAbsoluteTimeGetCurrent()
+        var allHeaders: [Int: [String: String]] = [:]
+        for (idx, info) in messageInfos.enumerated() {
+            var headers: [String: String] = info.additionalFields ?? [:]
+            if headers["Authentication-Results"] == nil && headers["Return-Path"] == nil {
+                if let uid = info.uid {
+                    if let rawData = try? await benchServer.fetchRawMessage(identifier: uid),
+                       let rawString = String(data: rawData, encoding: .utf8) {
+                        let parsed = Self.parseRawHeaders(rawString)
+                        headers.merge(parsed) { _, new in new }
+                    }
+                }
+            }
+            if headers["From"] == nil, let from = info.from { headers["From"] = from }
+            if headers["Subject"] == nil, let subject = info.subject { headers["Subject"] = subject }
+            allHeaders[idx] = headers
+        }
+        let p3Time = CFAbsoluteTimeGetCurrent() - p3Start
+
+        // Analysis
+        let p4Start = CFAbsoluteTimeGetCurrent()
+        var verdicts: [Verdict] = []
+        for (idx, info) in messageInfos.enumerated() {
+            let bodies = textBodies[idx] ?? (html: nil, text: nil)
+            let headers = allHeaders[idx] ?? [:]
+            let email = ParsedEmail(
+                messageId: info.messageId?.description ?? UUID().uuidString,
+                from: info.from ?? "",
+                returnPath: headers["Return-Path"],
+                authenticationResults: headers["Authentication-Results"],
+                subject: info.subject ?? "(no subject)",
+                htmlBody: bodies.html,
+                textBody: bodies.text,
+                receivedDate: info.internalDate ?? Date(),
+                headers: headers
+            )
+            let verdict = analyzer.analyze(email: email, imapUID: info.uid?.value, accountId: accountId)
+            verdicts.append(verdict)
+        }
+        let p4Time = CFAbsoluteTimeGetCurrent() - p4Start
+
+        // Store
+        let p5Start = CFAbsoluteTimeGetCurrent()
+        var saveFailures = 0
+        for verdict in verdicts {
+            do { try verdictStore.save(verdict) }
+            catch { saveFailures += 1 }
+        }
+        let p5Time = CFAbsoluteTimeGetCurrent() - p5Start
+
+        try? await benchServer.logout()
+        try? await benchServer.disconnect()
+
+        let totalTime = CFAbsoluteTimeGetCurrent() - totalStart
+        logger.info("Unseen scan: \(messageInfos.count) emails analyzed in \(String(format: "%.2f", totalTime))s")
+
+        return ScanResult(
+            emailCount: messageInfos.count,
+            fetchInfoTime: p1Time,
+            fetchBodiesTime: p2Time,
+            fetchHeadersTime: p3Time,
+            analysisTime: p4Time,
+            storageTime: p5Time,
+            totalTime: totalTime,
+            skippedParts: skippedParts,
+            saveFailures: saveFailures
+        )
+    }
+
     /// Stops monitoring and disconnects.
     public func stop() {
         monitorTask?.cancel()

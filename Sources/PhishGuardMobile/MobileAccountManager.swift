@@ -382,6 +382,20 @@ final class MobileAccountManager: ObservableObject {
             return
         }
         await startMonitor(account: account, credential: credential)
+
+        // Scan unseen messages in the background after reconnecting
+        if let monitor = monitors[account.id] {
+            Task {
+                do {
+                    let result = try await monitor.scanUnseen(credential: credential)
+                    if result.emailCount > 0 {
+                        logger.info("Unseen scan for \(account.email): \(result.emailCount) emails in \(String(format: "%.2f", result.totalTime))s")
+                    }
+                } catch {
+                    logger.error("Unseen scan failed for \(account.email): \(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     // MARK: - Persistence

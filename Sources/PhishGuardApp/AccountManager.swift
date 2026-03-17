@@ -402,7 +402,9 @@ final class AccountManager: ObservableObject {
                     accessToken: tokens.accessToken,
                     refreshToken: tokens.refreshToken ?? refreshToken
                 )
-                await startMonitor(accountId: accountId, credential: .oauth2(email: account.discovered.email, accessToken: tokens.accessToken))
+                let credential: IMAPCredential = .oauth2(email: account.discovered.email, accessToken: tokens.accessToken)
+                await startMonitor(accountId: accountId, credential: credential)
+                scanUnseenInBackground(accountId: accountId, credential: credential)
             } catch {
                 if let idx = accounts.firstIndex(where: { $0.id == accountId }) {
                     accounts[idx].status = .error("Token refresh failed — please sign in again")
@@ -412,7 +414,25 @@ final class AccountManager: ObservableObject {
             // Try to load password from Keychain
             guard let password = KeychainHelper.loadPassword(accountId: accountId) else { return }
             accounts[index].status = .connecting
-            await startMonitor(accountId: accountId, credential: .password(password))
+            let credential: IMAPCredential = .password(password)
+            await startMonitor(accountId: accountId, credential: credential)
+            scanUnseenInBackground(accountId: accountId, credential: credential)
+        }
+    }
+
+    /// Scans unseen messages in the background after reconnecting.
+    private func scanUnseenInBackground(accountId: String, credential: IMAPCredential) {
+        guard let monitor = monitors[accountId],
+              let account = accounts.first(where: { $0.id == accountId }) else { return }
+        Task {
+            do {
+                let result = try await monitor.scanUnseen(credential: credential)
+                if result.emailCount > 0 {
+                    logger.info("Unseen scan for \(account.discovered.email): \(result.emailCount) emails in \(String(format: "%.2f", result.totalTime))s")
+                }
+            } catch {
+                logger.error("Unseen scan failed for \(account.discovered.email): \(error.localizedDescription)")
+            }
         }
     }
 
