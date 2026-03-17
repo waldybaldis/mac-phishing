@@ -96,6 +96,7 @@ final class AccountManager: ObservableObject {
     private static let activatedAccountsKey = "activatedAccounts"
 
     init() {
+        KeychainHelper.migrateFromKeychainIfNeeded()
         self.session = CoreSession()
         session.seedAndStartUpdates()
 

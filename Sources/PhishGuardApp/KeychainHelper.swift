@@ -1,21 +1,90 @@
 import Foundation
-import Security
+import CryptoKit
 
-/// Simple wrapper around the macOS Keychain for storing credentials.
-/// All credentials are stored in a single Keychain item as a JSON dictionary
-/// so that only one password prompt is needed on app launch.
+/// Stores credentials in an encrypted file in Application Support.
+/// This avoids macOS Keychain password prompts that occur with ad-hoc signed apps
+/// (each rebuild changes the signing identity, causing Keychain to re-prompt).
+/// The vault file is readable only by the current user (POSIX 0600).
 enum KeychainHelper {
 
-    private static let service = "com.phishguard.app"
-    private static let vaultKey = "credentials"
+    private static let vaultFileName = "credentials.vault"
 
-    // MARK: - Vault (single Keychain item holding all credentials)
+    /// Encryption key derived from a stable machine-specific identifier.
+    /// Uses the hardware UUID so the vault is tied to this Mac.
+    private static var encryptionKey: SymmetricKey {
+        let seed: String
+        if let uuid = getMachineUUID() {
+            seed = "com.phishguard.vault.\(uuid)"
+        } else {
+            seed = "com.phishguard.vault.fallback"
+        }
+        let hash = SHA256.hash(data: Data(seed.utf8))
+        return SymmetricKey(data: hash)
+    }
+
+    private static func getMachineUUID() -> String? {
+        let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOPlatformExpertDevice"))
+        defer { IOObjectRelease(service) }
+        guard service != 0,
+              let uuidRef = IORegistryEntryCreateCFProperty(service, "IOPlatformUUID" as CFString, kCFAllocatorDefault, 0) else {
+            return nil
+        }
+        return uuidRef.takeRetainedValue() as? String
+    }
+
+    private static var vaultURL: URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        let dir = appSupport.appendingPathComponent("PhishGuard")
+        if !FileManager.default.fileExists(atPath: dir.path) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        return dir.appendingPathComponent(vaultFileName)
+    }
+
+    // MARK: - Vault (encrypted file holding all credentials)
 
     private static func loadVault() -> [String: String] {
+        guard let encryptedData = try? Data(contentsOf: vaultURL),
+              encryptedData.count > 0 else {
+            return [:]
+        }
+
+        do {
+            let sealedBox = try AES.GCM.SealedBox(combined: encryptedData)
+            let decryptedData = try AES.GCM.open(sealedBox, using: encryptionKey)
+            return (try? JSONDecoder().decode([String: String].self, from: decryptedData)) ?? [:]
+        } catch {
+            return [:]
+        }
+    }
+
+    private static func saveVault(_ vault: [String: String]) {
+        guard let jsonData = try? JSONEncoder().encode(vault) else { return }
+
+        do {
+            let sealedBox = try AES.GCM.seal(jsonData, using: encryptionKey)
+            guard let combined = sealedBox.combined else { return }
+            try combined.write(to: vaultURL, options: .atomic)
+            // Set file permissions to owner-only (0600)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: vaultURL.path)
+        } catch {
+            // Vault save failed — credentials will be lost on next read
+        }
+    }
+
+    // MARK: - Migration from Keychain
+
+    /// One-time migration: reads any existing Keychain vault and moves it to the file-based vault.
+    static func migrateFromKeychainIfNeeded() {
+        // Skip if file vault already exists
+        if FileManager.default.fileExists(atPath: vaultURL.path) { return }
+
+        // Try to read from old Keychain location
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: vaultKey,
+            kSecAttrService as String: "com.phishguard.app",
+            kSecAttrAccount as String: "credentials",
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
@@ -26,30 +95,19 @@ enum KeychainHelper {
         guard status == errSecSuccess,
               let data = result as? Data,
               let dict = try? JSONDecoder().decode([String: String].self, from: data) else {
-            return [:]
+            return
         }
-        return dict
-    }
 
-    private static func saveVault(_ vault: [String: String]) {
-        guard let data = try? JSONEncoder().encode(vault) else { return }
+        // Save to file vault
+        saveVault(dict)
 
-        // Delete existing item first
+        // Delete old Keychain item
         let deleteQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: vaultKey,
+            kSecAttrService as String: "com.phishguard.app",
+            kSecAttrAccount as String: "credentials",
         ]
         SecItemDelete(deleteQuery as CFDictionary)
-
-        let addQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: vaultKey,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
-        ]
-        SecItemAdd(addQuery as CFDictionary, nil)
     }
 
     // MARK: - Public API (unchanged interface)

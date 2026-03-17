@@ -92,6 +92,18 @@ final class MobileAccountManager: ObservableObject {
 
         KeychainHelper.savePassword(accountId: account.id.uuidString, password: password)
         await startMonitor(account: account, credential: .password(password))
+
+        // Initial scan: check last 100 emails on first activation
+        if let monitor = monitors[account.id] {
+            Task {
+                do {
+                    let result = try await monitor.scanInbox(count: 100, credential: .password(password))
+                    logger.info("Initial scan for \(email): \(result.emailCount) emails in \(String(format: "%.2f", result.totalTime))s")
+                } catch {
+                    logger.error("Initial scan failed for \(email): \(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     /// Adds an account with OAuth2 authentication.
@@ -127,6 +139,49 @@ final class MobileAccountManager: ObservableObject {
         )
 
         await startMonitor(account: account, credential: .oauth2(email: email, accessToken: tokens.accessToken))
+
+        // Initial scan: check last 100 emails on first activation
+        if let monitor = monitors[account.id] {
+            Task {
+                do {
+                    let result = try await monitor.scanInbox(count: 100, credential: .oauth2(email: email, accessToken: tokens.accessToken))
+                    logger.info("Initial scan for \(email): \(result.emailCount) emails in \(String(format: "%.2f", result.totalTime))s")
+                } catch {
+                    logger.error("Initial scan failed for \(email): \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    /// Re-authenticates a disconnected account with a new password.
+    func reactivateWithPassword(id: UUID, password: String) async {
+        guard let account = accounts.first(where: { $0.id == id }) else { return }
+        accountStatuses[id] = .connecting
+        KeychainHelper.savePassword(accountId: id.uuidString, password: password)
+        await startMonitor(account: account, credential: .password(password))
+    }
+
+    /// Re-authenticates a disconnected account with OAuth.
+    func reactivateWithOAuth(id: UUID) async throws {
+        guard let account = accounts.first(where: { $0.id == id }) else { return }
+
+        let oauthProvider: OAuthConfig.Provider
+        switch account.provider {
+        case .gmail: oauthProvider = .google
+        case .outlook: oauthProvider = .microsoft
+        default: return
+        }
+
+        let tokens = try await oauthManager.authenticate(provider: oauthProvider)
+        accountStatuses[id] = .connecting
+
+        KeychainHelper.saveTokens(
+            accountId: id.uuidString,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken
+        )
+
+        await startMonitor(account: account, credential: .oauth2(email: account.email, accessToken: tokens.accessToken))
     }
 
     /// Removes an account and stops its monitor.

@@ -56,6 +56,7 @@ public final class IMAPMonitor: @unchecked Sendable {
     private var monitorTask: Task<Void, Never>?
     private var server: IMAPServer?
     private var idleSession: IMAPIdleSession?
+    private var storedCredential: IMAPCredential?
 
     private var state: State {
         get { stateLock.withLock { _state } }
@@ -79,6 +80,7 @@ public final class IMAPMonitor: @unchecked Sendable {
         }
 
         state = .connecting
+        self.storedCredential = credential
 
         logger.info("Connecting to \(self.account.imapServer, privacy: .public):\(self.account.imapPort) (TLS: \(self.account.useTLS))")
 
@@ -135,8 +137,8 @@ public final class IMAPMonitor: @unchecked Sendable {
 
                 switch event {
                 case .exists(let count):
-                    // New message(s) — fetch the latest
-                    await fetchAndAnalyzeLatest(server: server, messageCount: count)
+                    // New message(s) — fetch the latest using a separate connection
+                    await fetchAndAnalyzeLatest(messageCount: count)
                 default:
                     break
                 }
@@ -150,16 +152,33 @@ public final class IMAPMonitor: @unchecked Sendable {
     }
 
     /// Fetches the latest message and runs phishing analysis.
-    private func fetchAndAnalyzeLatest(server: IMAPServer, messageCount: Int) async {
+    /// Uses a separate IMAP connection to avoid conflicting with the IDLE session.
+    private func fetchAndAnalyzeLatest(messageCount: Int) async {
+        guard let credential = storedCredential else { return }
+
+        let fetchServer = IMAPServer(host: account.imapServer, port: account.imapPort)
         do {
+            try await fetchServer.connect()
+            switch credential {
+            case .password(let password):
+                try await fetchServer.login(username: account.username, password: password)
+            case .oauth2(let email, let accessToken):
+                try await fetchServer.authenticateXOAUTH2(email: email, accessToken: accessToken)
+            }
+            try await fetchServer.selectMailbox("INBOX")
+
             let seqNum = SequenceNumber(messageCount)
-            guard let messageInfo = try await server.fetchMessageInfo(for: seqNum) else { return }
+            guard let messageInfo = try await fetchServer.fetchMessageInfo(for: seqNum) else {
+                try? await fetchServer.logout()
+                try? await fetchServer.disconnect()
+                return
+            }
 
             // Fetch the full message for body content
-            let message = try await server.fetchMessage(from: messageInfo)
+            let message = try await fetchServer.fetchMessage(from: messageInfo)
 
             // Fetch raw message data for full headers (Authentication-Results, Return-Path, etc.)
-            let headers = await extractHeaders(server: server, messageInfo: messageInfo)
+            let headers = await extractHeaders(server: fetchServer, messageInfo: messageInfo)
 
             let email = ParsedEmail(
                 messageId: messageInfo.messageId?.description ?? UUID().uuidString,
@@ -173,8 +192,13 @@ public final class IMAPMonitor: @unchecked Sendable {
                 headers: headers
             )
 
+            try? await fetchServer.logout()
+            try? await fetchServer.disconnect()
+
             processNewEmail(email, imapUID: messageInfo.uid?.value)
         } catch {
+            try? await fetchServer.logout()
+            try? await fetchServer.disconnect()
             delegate?.imapMonitor(self, didEncounterError: error)
         }
     }
@@ -601,6 +625,7 @@ public final class IMAPMonitor: @unchecked Sendable {
 
         idleSession = nil
         server = nil
+        storedCredential = nil
         state = .disconnected
         delegate?.imapMonitorDidDisconnect(self)
     }
