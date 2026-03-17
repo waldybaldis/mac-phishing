@@ -1,5 +1,12 @@
 import Foundation
 import CryptoKit
+import Security
+#if canImport(IOKit)
+import IOKit
+#endif
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Stores credentials in an encrypted file in Application Support.
 /// This avoids macOS Keychain password prompts that occur with ad-hoc signed apps
@@ -23,6 +30,7 @@ enum KeychainHelper {
     }
 
     private static func getMachineUUID() -> String? {
+        #if canImport(IOKit)
         let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOPlatformExpertDevice"))
         defer { IOObjectRelease(service) }
         guard service != 0,
@@ -30,6 +38,11 @@ enum KeychainHelper {
             return nil
         }
         return uuidRef.takeRetainedValue() as? String
+        #elseif canImport(UIKit)
+        return UIDevice.current.identifierForVendor?.uuidString
+        #else
+        return nil
+        #endif
     }
 
     private static var vaultURL: URL {
@@ -73,10 +86,11 @@ enum KeychainHelper {
         }
     }
 
-    // MARK: - Migration from Keychain
+    // MARK: - Migration from Keychain (macOS only)
 
     /// One-time migration: reads any existing Keychain vault and moves it to the file-based vault.
     static func migrateFromKeychainIfNeeded() {
+        #if os(macOS)
         // Skip if file vault already exists
         if FileManager.default.fileExists(atPath: vaultURL.path) { return }
 
@@ -108,6 +122,7 @@ enum KeychainHelper {
             kSecAttrAccount as String: "credentials",
         ]
         SecItemDelete(deleteQuery as CFDictionary)
+        #endif
     }
 
     // MARK: - Public API (unchanged interface)
