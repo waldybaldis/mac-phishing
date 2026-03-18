@@ -183,11 +183,22 @@ class BaseIMAPCommandHandler<ResultType: Sendable>: CommandHandler, RemovableCha
         context.fireChannelRead(data)
     }
     
+    /// Called when the channel becomes inactive (e.g. TCP connection drops during sleep).
+    /// Ensures the promise is always fulfilled so NIO's EventLoopFuture.deinit assertion
+    /// doesn't fire.
+    func channelInactive(context: ChannelHandlerContext) {
+        if !isCompleted {
+            failWithError(IMAPError.connectionFailed("Channel became inactive"))
+            lock.withLock { isCompleted = true }
+        }
+        context.fireChannelInactive()
+    }
+
     /// Error caught method from ChannelInboundHandler
     func errorCaught(context: ChannelHandlerContext, error: Error) {
         // Handle the error
         handleError(error)
-        
+
         // Forward the error to the next handler
         context.fireErrorCaught(error)
     }

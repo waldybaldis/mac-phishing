@@ -127,26 +127,83 @@ public final class IMAPMonitor: @unchecked Sendable {
     }
 
     /// Runs the IDLE loop, listening for new messages.
+    /// Maximum number of consecutive reconnection attempts before giving up.
+    private static let maxReconnectAttempts = 5
+
     private func runIdleLoop(server: IMAPServer) async {
-        do {
-            let session = try await server.idle(on: "INBOX")
-            self.idleSession = session
+        var currentServer = server
+        var reconnectAttempts = 0
 
-            for await event in session.events {
-                guard !Task.isCancelled else { break }
+        while !Task.isCancelled {
+            do {
+                let session = try await currentServer.idle(on: "INBOX")
+                self.idleSession = session
+                reconnectAttempts = 0 // Reset on successful IDLE start
 
-                switch event {
-                case .exists(let count):
-                    // New message(s) — fetch the latest using a separate connection
-                    await fetchAndAnalyzeLatest(messageCount: count)
-                default:
-                    break
+                for await event in session.events {
+                    guard !Task.isCancelled else { return }
+
+                    switch event {
+                    case .exists(let count):
+                        // New message(s) — fetch the latest using a separate connection
+                        await fetchAndAnalyzeLatest(messageCount: count)
+                    case .bye:
+                        // Server or channel disconnected — break out to reconnect
+                        logger.info("IDLE session received BYE for \(self.account.username, privacy: .public), will reconnect")
+                    default:
+                        break
+                    }
                 }
+
+                // Stream ended (channel dropped or BYE received) — reconnect
+                guard !Task.isCancelled else { return }
+                logger.info("IDLE stream ended for \(self.account.username, privacy: .public), attempting reconnect")
+
+            } catch {
+                guard !Task.isCancelled else { return }
+                logger.error("IDLE error for \(self.account.username, privacy: .public): \(error.localizedDescription, privacy: .public)")
             }
-        } catch {
-            if !Task.isCancelled {
-                state = .error(error.localizedDescription)
-                delegate?.imapMonitor(self, didEncounterError: error)
+
+            // Reconnect with exponential backoff
+            reconnectAttempts += 1
+            if reconnectAttempts > Self.maxReconnectAttempts {
+                state = .error("Disconnected after \(Self.maxReconnectAttempts) reconnection attempts")
+                delegate?.imapMonitor(self, didEncounterError: MonitorError.connectionFailed("Max reconnection attempts reached"))
+                return
+            }
+
+            let delay = min(UInt64(pow(2.0, Double(reconnectAttempts))) * 1_000_000_000, 30_000_000_000) // 2s, 4s, 8s, 16s, 30s cap
+            logger.info("Reconnecting in \(delay / 1_000_000_000)s (attempt \(reconnectAttempts)/\(Self.maxReconnectAttempts)) for \(self.account.username, privacy: .public)")
+            try? await Task.sleep(nanoseconds: delay)
+            guard !Task.isCancelled else { return }
+
+            // Disconnect old server and create a fresh connection
+            try? await currentServer.disconnect()
+            self.idleSession = nil
+
+            let newServer = IMAPServer(host: account.imapServer, port: account.imapPort)
+            do {
+                try await newServer.connect()
+                guard let credential = storedCredential else {
+                    state = .error("No credentials for reconnection")
+                    return
+                }
+                switch credential {
+                case .password(let password):
+                    try await newServer.login(username: account.username, password: password)
+                case .oauth2(let email, let accessToken):
+                    try await newServer.authenticateXOAUTH2(email: email, accessToken: accessToken)
+                }
+                try await newServer.selectMailbox("INBOX")
+                currentServer = newServer
+                self.server = newServer
+                state = .monitoring
+                logger.info("Reconnected successfully for \(self.account.username, privacy: .public)")
+            } catch {
+                guard !Task.isCancelled else { return }
+                logger.error("Reconnect failed for \(self.account.username, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                try? await newServer.disconnect()
+                // Loop will retry with backoff
             }
         }
     }

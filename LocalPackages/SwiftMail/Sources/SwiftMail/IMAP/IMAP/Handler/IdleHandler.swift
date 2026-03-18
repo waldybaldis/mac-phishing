@@ -27,6 +27,13 @@ final class IdleHandler: BaseIMAPCommandHandler<Void>, IMAPCommandHandler, @unch
         fatalError("Use init(commandTag:promise:continuation:) instead")
     }
 
+    override func channelInactive(context: ChannelHandlerContext) {
+        // Finish the event stream so the IDLE consumer sees the channel drop
+        continuation.yield(.bye("Channel became inactive"))
+        continuation.finish()
+        super.channelInactive(context: context)
+    }
+
     override func handleTaggedOKResponse(_ response: TaggedResponse) {
         // Call super to handle CLIENTBUG warnings and fulfill the Void promise.
         super.handleTaggedOKResponse(response)
