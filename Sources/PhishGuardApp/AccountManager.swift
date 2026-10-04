@@ -97,7 +97,7 @@ final class AccountManager: ObservableObject {
 
     init() {
         KeychainHelper.migrateFromKeychainIfNeeded()
-        self.session = CoreSession()
+        self.session = CoreSession(jevAPIKey: { KeychainHelper.loadString(key: JevSignalCheck.apiKeyVaultKey) })
         session.seedAndStartUpdates()
 
         // One-time cleanup: remove brands incorrectly seeded into user_brands

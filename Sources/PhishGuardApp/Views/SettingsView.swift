@@ -1,4 +1,5 @@
 import SwiftUI
+import PhishGuardCore
 
 /// Settings view for adjusting PhishGuard behavior.
 struct SettingsView: View {
@@ -6,6 +7,9 @@ struct SettingsView: View {
     @State private var scanCount: Int = 100
     @AppStorage("sensitivityThreshold") private var sensitivityThreshold: Double = 3.0
     @AppStorage("showScore") private var showScore: Bool = false
+    @AppStorage(JevSignalCheck.enabledDefaultsKey) private var jevEnabled: Bool = false
+    @State private var jevAPIKey: String = ""
+    @State private var jevKeySaved = false
     @State private var senderDomainCount: Int = 0
     @State private var linkDomainCount: Int = 0
     @State private var showSenderSheet = false
@@ -47,6 +51,42 @@ struct SettingsView: View {
                     .font(.caption)
                     .padding(.horizontal, 14)
                     .padding(.top, 4)
+
+                sectionDivider
+
+                // AI Analysis (Jev)
+                sectionHeader("AI Analysis")
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle("Ask Jev about unfamiliar senders", isOn: $jevEnabled)
+                        .font(.caption)
+                    Text("Sends sender, subject, the first 2,000 characters of the body and link addresses (without query strings) to TypeSafe. Trusted and established senders are never sent.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack {
+                        SecureField(jevKeySaved ? "API key saved" : "TypeSafe API key", text: $jevAPIKey)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.caption)
+                        Button(jevAPIKey.isEmpty && jevKeySaved ? "Remove" : "Save") {
+                            if jevAPIKey.isEmpty {
+                                KeychainHelper.delete(key: JevSignalCheck.apiKeyVaultKey)
+                            } else {
+                                KeychainHelper.save(key: JevSignalCheck.apiKeyVaultKey, string: jevAPIKey)
+                            }
+                            jevAPIKey = ""
+                            jevKeySaved = KeychainHelper.loadString(key: JevSignalCheck.apiKeyVaultKey) != nil
+                        }
+                        .controlSize(.small)
+                        .buttonStyle(.bordered)
+                        .frame(width: 70)
+                        .disabled(jevAPIKey.isEmpty && !jevKeySaved)
+                    }
+                    .disabled(!jevEnabled)
+                }
+                .padding(.horizontal, 14)
+                .onAppear {
+                    jevKeySaved = KeychainHelper.loadString(key: JevSignalCheck.apiKeyVaultKey) != nil
+                }
 
                 sectionDivider
 

@@ -49,7 +49,10 @@ final class MobileAccountManager: ObservableObject {
     private static let backgroundScanCount = 5
 
     init() {
-        self.session = CoreSession(databasePath: Self.mobileDatabasePath())
+        self.session = CoreSession(
+            databasePath: Self.mobileDatabasePath(),
+            jevAPIKey: { KeychainHelper.loadString(key: JevSignalCheck.apiKeyVaultKey) }
+        )
         session.seedAndStartUpdates()
         loadAccounts()
     }

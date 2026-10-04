@@ -82,6 +82,16 @@ public final class VerdictStore: @unchecked Sendable {
         ))
     }
 
+    /// Counts earlier clean verdicts from exactly this sender domain (subdomains and lookalikes
+    /// such as `domain.evil.xyz` don't match). Used to skip AI analysis for established senders.
+    public func cleanVerdictCount(domain: String, excludingMessageId: String) throws -> Int {
+        let query = DatabaseManager.verdicts
+            .filter(DatabaseManager.verdictFrom.like("%@\(domain)>") || DatabaseManager.verdictFrom.like("%@\(domain)"))
+            .filter(DatabaseManager.verdictScore < PhishGuardThresholds.suspicious)
+            .filter(DatabaseManager.verdictMessageId != excludingMessageId)
+        return try db.connection.scalar(query.count)
+    }
+
     /// Returns the count of unacted verdicts at or above the given score.
     public func alertCount(minimumScore: Int) throws -> Int {
         let query = DatabaseManager.verdicts

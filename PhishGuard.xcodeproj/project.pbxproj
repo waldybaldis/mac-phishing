@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CBFDC09B2249AE247DE33E81 /* JevSignalCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 785AE91CDE84563741C8BD6F /* JevSignalCheckTests.swift */; };
+		689B7049B7AC2DC252C75BED /* JevSignalCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16C30DACE77772618C8406D /* JevSignalCheck.swift */; };
+		4700A5B3EBB8C90704FA1028 /* JevClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF05FB7B69615ED05845F777 /* JevClient.swift */; };
 		063FBE0C37346FE4FCDBCD24 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0734A7E95F448CC91E97862E /* ContentView.swift */; };
 		0680F6CEB3BBDB44DE58B9F1 /* MobileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 360356AC828A2BF603082EAE /* MobileSettingsView.swift */; };
 		07E580BEBB75F04D6C0225E1 /* AllowlistStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E67A48886054C75E5526C57 /* AllowlistStore.swift */; };
@@ -151,6 +154,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		785AE91CDE84563741C8BD6F /* JevSignalCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JevSignalCheckTests.swift; sourceTree = "<group>"; };
+		D16C30DACE77772618C8406D /* JevSignalCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JevSignalCheck.swift; sourceTree = "<group>"; };
+		EF05FB7B69615ED05845F777 /* JevClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JevClient.swift; sourceTree = "<group>"; };
 		0534FA8FA7C12C0E593281F9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0734A7E95F448CC91E97862E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		0A4CE6FBEACD352CE3B60B16 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -390,6 +396,8 @@
 				E63E8D5E9F7AAD8F236C8333 /* BrandImpersonationCheck.swift */,
 				4D8789DFFF4AB67427573388 /* DomainUtils.swift */,
 				536AE1C4CE8C5F5B80AA5CB6 /* IPURLCheck.swift */,
+				EF05FB7B69615ED05845F777 /* JevClient.swift */,
+				D16C30DACE77772618C8406D /* JevSignalCheck.swift */,
 				E1E91D376C520E3681C4B330 /* LinkMismatchCheck.swift */,
 				E08D56E1E055D9B91B12D5A3 /* PhishingAnalyzer.swift */,
 				12E09963C3B2706281053AF5 /* PhishingCheck.swift */,
@@ -408,6 +416,7 @@
 				6631AB915FE1472A7617D3EA /* BlacklistUpdaterTests.swift */,
 				E8CC5AEFBAF7A1A608A29973 /* BrandImpersonationCheckTests.swift */,
 				60DE7A310BC1018D974490B0 /* IPURLCheckTests.swift */,
+				785AE91CDE84563741C8BD6F /* JevSignalCheckTests.swift */,
 				B7446D1FB0AEA1EE6916FDDF /* LinkMismatchCheckTests.swift */,
 				761E0D0C89D06CE906B0E9A9 /* ParsedEmailTests.swift */,
 				52BA2A3AF4EB9489496E1A5C /* PhishingAnalyzerTests.swift */,
@@ -677,6 +686,8 @@
 				FB3EF875773BC46AF8F2D6FB /* DomainUtils.swift in Sources */,
 				0D27A3093340B8FF82A2B6A8 /* IMAPMonitor.swift in Sources */,
 				6A53BD423C99BBE9F1F7F36D /* IPURLCheck.swift in Sources */,
+				4700A5B3EBB8C90704FA1028 /* JevClient.swift in Sources */,
+				689B7049B7AC2DC252C75BED /* JevSignalCheck.swift in Sources */,
 				9A8B414F7400EE1E330F458A /* LinkMismatchCheck.swift in Sources */,
 				4F92C8BE68D301EBCE906CB5 /* MailProviderDetector.swift in Sources */,
 				E47BA19541FF180F083A5ECF /* NotificationManager.swift in Sources */,
@@ -727,6 +738,7 @@
 				974091F2891BB82354B96679 /* BlacklistUpdaterTests.swift in Sources */,
 				B9D62CC57108D4AC8850901C /* BrandImpersonationCheckTests.swift in Sources */,
 				8F22E4EF8B7CFC9910DA0725 /* IPURLCheckTests.swift in Sources */,
+				CBFDC09B2249AE247DE33E81 /* JevSignalCheckTests.swift in Sources */,
 				64A26C68EA98C322E8556DFB /* LinkMismatchCheckTests.swift in Sources */,
 				61AB65AEFB80F4EA62CA269B /* ParsedEmailTests.swift in Sources */,
 				973E2111F6BA3E32218CA983 /* PhishingAnalyzerTests.swift in Sources */,

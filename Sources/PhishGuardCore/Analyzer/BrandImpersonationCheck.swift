@@ -7,7 +7,8 @@ import Foundation
 /// Adds +2 more points if no link in the email points to the brand's domain either.
 /// Adds +2 more points if the brand has an active Safeonweb phishing campaign.
 public struct BrandImpersonationCheck: PhishingCheck {
-    public let name = "Brand Impersonation Check"
+    public static let checkName = "Brand Impersonation Check"
+    public let name = BrandImpersonationCheck.checkName
     private let campaignStore: SafeonwebCampaignStore?
     private let userBrandStore: UserBrandStore?
 

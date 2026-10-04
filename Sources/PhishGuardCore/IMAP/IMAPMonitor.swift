@@ -252,7 +252,7 @@ public final class IMAPMonitor: @unchecked Sendable {
             try? await fetchServer.logout()
             try? await fetchServer.disconnect()
 
-            processNewEmail(email, imapUID: messageInfo.uid?.value)
+            await processNewEmail(email, imapUID: messageInfo.uid?.value)
         } catch {
             try? await fetchServer.logout()
             try? await fetchServer.disconnect()
@@ -326,8 +326,8 @@ public final class IMAPMonitor: @unchecked Sendable {
     }
 
     /// Processes a new email: analyze it and store the verdict.
-    public func processNewEmail(_ email: ParsedEmail, imapUID: UInt32? = nil) {
-        let verdict = analyzer.analyze(email: email, imapUID: imapUID, accountId: accountId)
+    public func processNewEmail(_ email: ParsedEmail, imapUID: UInt32? = nil) async {
+        let verdict = await analyzer.evaluate(email: email, imapUID: imapUID, accountId: accountId)
         do {
             try verdictStore.save(verdict)
         } catch {
@@ -594,7 +594,7 @@ public final class IMAPMonitor: @unchecked Sendable {
         }
 
         // Phase 4: Build ParsedEmail and run analysis
-        var verdicts: [Verdict] = []
+        var emails: [(email: ParsedEmail, imapUID: UInt32?)] = []
         let p4Start = CFAbsoluteTimeGetCurrent()
 
         for (idx, info) in messageInfos.enumerated() {
@@ -613,9 +613,9 @@ public final class IMAPMonitor: @unchecked Sendable {
                 headers: headers
             )
 
-            let verdict = analyzer.analyze(email: email, imapUID: info.uid?.value, accountId: accountId)
-            verdicts.append(verdict)
+            emails.append((email: email, imapUID: info.uid?.value))
         }
+        let verdicts = await analyzer.evaluate(emails, accountId: accountId)
         let p4Time = CFAbsoluteTimeGetCurrent() - p4Start
 
         // Phase 5: Store verdicts
@@ -771,7 +771,7 @@ public final class IMAPMonitor: @unchecked Sendable {
 
         // Analysis
         let p4Start = CFAbsoluteTimeGetCurrent()
-        var verdicts: [Verdict] = []
+        var emails: [(email: ParsedEmail, imapUID: UInt32?)] = []
         for (idx, info) in messageInfos.enumerated() {
             let bodies = textBodies[idx] ?? (html: nil, text: nil)
             let headers = allHeaders[idx] ?? [:]
@@ -786,9 +786,9 @@ public final class IMAPMonitor: @unchecked Sendable {
                 receivedDate: info.internalDate ?? Date(),
                 headers: headers
             )
-            let verdict = analyzer.analyze(email: email, imapUID: info.uid?.value, accountId: accountId)
-            verdicts.append(verdict)
+            emails.append((email: email, imapUID: info.uid?.value))
         }
+        let verdicts = await analyzer.evaluate(emails, accountId: accountId)
         let p4Time = CFAbsoluteTimeGetCurrent() - p4Start
 
         // Store

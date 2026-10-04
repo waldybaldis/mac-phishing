@@ -6,6 +6,9 @@ struct MobileSettingsView: View {
     @ObservedObject var accountManager: MobileAccountManager
     @AppStorage("sensitivityThreshold") private var sensitivityThreshold: Double = 3.0
     @AppStorage("showScore") private var showScore: Bool = false
+    @AppStorage(JevSignalCheck.enabledDefaultsKey) private var jevEnabled: Bool = false
+    @State private var jevAPIKey: String = ""
+    @State private var jevKeySaved = false
     @State private var senderDomainCount: Int = 0
     @State private var linkDomainCount: Int = 0
     @State private var showSenderSheet = false
@@ -41,6 +44,33 @@ struct MobileSettingsView: View {
                         }
                     }
                     Toggle("Show Score on Alerts", isOn: $showScore)
+                }
+
+                // AI Analysis (Jev)
+                Section {
+                    Toggle("Ask Jev about unfamiliar senders", isOn: $jevEnabled)
+                    if jevEnabled {
+                        SecureField(jevKeySaved ? "API key saved" : "TypeSafe API key", text: $jevAPIKey)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        Button(jevAPIKey.isEmpty && jevKeySaved ? "Remove API Key" : "Save API Key") {
+                            if jevAPIKey.isEmpty {
+                                KeychainHelper.delete(key: JevSignalCheck.apiKeyVaultKey)
+                            } else {
+                                KeychainHelper.save(key: JevSignalCheck.apiKeyVaultKey, string: jevAPIKey)
+                            }
+                            jevAPIKey = ""
+                            jevKeySaved = KeychainHelper.loadString(key: JevSignalCheck.apiKeyVaultKey) != nil
+                        }
+                        .disabled(jevAPIKey.isEmpty && !jevKeySaved)
+                    }
+                } header: {
+                    Text("AI Analysis")
+                } footer: {
+                    Text("Sends sender, subject, the first 2,000 characters of the body and link addresses (without query strings) to TypeSafe. Trusted and established senders are never sent.")
+                }
+                .onAppear {
+                    jevKeySaved = KeychainHelper.loadString(key: JevSignalCheck.apiKeyVaultKey) != nil
                 }
 
                 // Trusted Domains

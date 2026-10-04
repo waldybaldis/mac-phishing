@@ -1,5 +1,7 @@
 # PhishGuard — Mac Mail Phishing Detection MVP Plan
 
+> **Oct 2026:** detection roadmap revised around TypeSafe's Jev model — see [JEV-PLAN.md](JEV-PLAN.md). Phases 2–4 below are superseded.
+
 ## Context
 
 There is **no phishing detection tool for Apple Mail** today — not as an extension, not as a standalone app. SpamSieve does spam filtering but no phishing-specific analysis. Enterprise tools (Mimecast, Proofpoint) have no consumer editions. This is a genuine gap.

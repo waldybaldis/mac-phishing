@@ -20,7 +20,9 @@ public final class CoreSession {
 
     /// Creates a CoreSession using the given database path.
     /// Falls back to an in-memory database if the on-disk database can't be opened.
-    public init(databasePath: String? = nil) {
+    /// - Parameter jevAPIKey: Supplies the TypeSafe API key from the app's credential vault.
+    ///   AI analysis runs only when this returns a key and the user enabled it in Settings.
+    public init(databasePath: String? = nil, jevAPIKey: @escaping @Sendable () -> String? = { nil }) {
         let db = Self.openDatabase(path: databasePath)
         self.dbManager = db
 
@@ -30,8 +32,14 @@ public final class CoreSession {
         let campaignStore = SafeonwebCampaignStore(database: db)
         let userBrandStore = UserBrandStore(database: db)
         let userBlocklistStore = UserBlocklistStore(database: db)
+        let verdictStore = VerdictStore(database: db)
+        let jev = JevSignalCheck(
+            client: JevClient(apiKey: jevAPIKey),
+            verdictStore: verdictStore,
+            isEnabled: { UserDefaults.standard.bool(forKey: JevSignalCheck.enabledDefaultsKey) }
+        )
 
-        self.verdictStore = VerdictStore(database: db)
+        self.verdictStore = verdictStore
         self.blacklistStore = blacklistStore
         self.allowlistStore = allowlistStore
         self.trustedLinkDomainStore = trustedLinkDomainStore
@@ -45,7 +53,8 @@ public final class CoreSession {
             trustedLinkDomainStore: trustedLinkDomainStore,
             campaignStore: campaignStore,
             userBrandStore: userBrandStore,
-            userBlocklistStore: userBlocklistStore
+            userBlocklistStore: userBlocklistStore,
+            jev: jev
         )
     }
 
